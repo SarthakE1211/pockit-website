@@ -1,0 +1,53 @@
+{
+  "name": "pockit-engineers-mvp-v01",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "cross-env BUILD_TARGET=server next dev --webpack",
+    "dev:turbo": "cross-env BUILD_TARGET=server next dev",
+    "dev:low": "cross-env BUILD_TARGET=server NODE_OPTIONS=--max-old-space-size=2048 next dev --webpack",
+    "build": "cross-env BUILD_TARGET=static next build",
+    "build:static": "cross-env BUILD_TARGET=static next build",
+    "build:server": "cross-env BUILD_TARGET=server next build",
+    "zip:cpanel": "npm run build:static && node -e \"const fs=require('fs'),p='public/pockit-cpanel-site.zip';if(fs.existsSync(p))fs.unlinkSync(p)\" && cd out && npx --yes bestzip ../public/pockit-cpanel-site.zip *",
+    "start": "next start",
+    "preview:static": "npx --yes serve@latest out -l 3000",
+    "lint": "eslint .",
+    "seed:landing": "tsx --env-file=.env.local scripts/seed-landing-pages.ts",
+    "seed:services": "tsx --env-file=.env.local scripts/seed-service-pages.ts",
+    "delete:dotted-landing": "tsx --env-file=.env.local scripts/delete-dotted-landing-pages.ts",
+    "convert:webp": "node scripts/convert-images-to-webp.mjs"
+  },
+  "dependencies": {
+    "@portabletext/react": "^6.0.3",
+    "@sanity/client": "^7.21.0",
+    "@sanity/image-url": "^2.1.1",
+    "@sanity/vision": "^5.20.0",
+    "@sendgrid/mail": "^8.1.6",
+    "firebase": "^12.11.0",
+    "framer-motion": "^12.38.0",
+    "groq": "^5.20.0",
+    "lucide-react": "^1.6.0",
+    "next": "^16.2.3",
+    "next-sanity": "^12.1.1",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "sanity": "^5.14.1",
+    "styled-components": "^6.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "cross-env": "^7.0.3",
+    "eslint": "^9.39.0",
+    "eslint-config-next": "16.2.1",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.0"
+  }
+}

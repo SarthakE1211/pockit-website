@@ -1,0 +1,96 @@
+# Apache / cPanel — copied into `out/` on `npm run build`
+# Ensures 301 for legacy path (SEO); static HTML fallback is `src/app/expert/page.tsx`
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Canonical host: force the www version (SEO 301).
+    # The site's canonical URLs, JSON-LD, sitemap and robots all use
+    # https://www.pockitengineers.com (see src/app/layout.tsx etc.), so the
+    # bare apex must 301 to www to avoid serving duplicate content on two
+    # hosts. Scoped to the exact apex with `$` so the blog subdomain
+    # (pockitblog.pockitengineers.com, hosted on Vercel) is never matched.
+    # Runs first so every later rule operates on the canonical host.
+    RewriteCond %{HTTP_HOST} ^pockitengineers\.com$ [NC]
+    RewriteRule ^(.*)$ https://www.pockitengineers.com/$1 [R=301,L]
+
+    # /expert legacy redirect (SEO 301)
+    RewriteRule ^expert/?$ /become-a-technician [R=301,L]
+    RewriteRule ^expert\.html$ /become-a-technician [R=301,L]
+
+    # Nested clean URLs — blog posts and author pages live under /blog/<…>
+    # and export to /blog/<…>.html (e.g. out/blog/my-post.html,
+    # out/blog/author/jane.html). The single-segment rule below only matches
+    # top-level pages, so map the deeper blog paths explicitly. Scoped to
+    # `blog/` so the marketing-page behaviour is untouched. (CHANGELOG #065 —
+    # the blog moved into the static export.)
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{DOCUMENT_ROOT}/$1.html -f
+    RewriteRule ^(blog/.+?)/?$ /$1.html [L]
+
+    # Map clean URLs and trailing-slash directory URLs to their .html files.
+    # Next.js static export creates `<page>.html` at root AND a `<page>/`
+    # directory with internal metadata (no index.html). Without this rule
+    # Apache's mod_dir redirects /about → /about/ then 403s the empty dir
+    # (which is what was happening before — see CHANGELOG #014.x).
+    # This rule serves /about.html for both /about and /about/.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{DOCUMENT_ROOT}/$1.html -f
+    RewriteRule ^([^/]+)/?$ /$1.html [L]
+</IfModule>
+
+# Prevent mod_dir from auto-redirecting /about → /about/ for the empty
+# Next.js metadata directories (which would cause a redirect loop with
+# the rule above on some Apache configs).
+<IfModule mod_dir.c>
+    DirectorySlash Off
+</IfModule>
+
+# ---------------------------------------------------------------------------
+# Performance: text compression + static-asset caching.
+# Addresses the two PageSpeed Insights diagnostics that the cPanel static
+# host triggers by default — "Enable text compression" and "Serve static
+# assets with an efficient cache policy" (CHANGELOG #061). Safe on cPanel:
+# every directive is wrapped in <IfModule> so a missing module is a no-op.
+# ---------------------------------------------------------------------------
+
+# Brotli first (best ratio), gzip as the universal fallback.
+<IfModule mod_brotli.c>
+    AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/css text/xml \
+        text/javascript application/javascript application/json \
+        application/xml application/rss+xml image/svg+xml font/ttf font/otf font/woff font/woff2
+</IfModule>
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml \
+        text/javascript application/javascript application/json \
+        application/xml application/rss+xml image/svg+xml font/ttf font/otf font/woff font/woff2
+</IfModule>
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+
+    # Hashed, immutable build assets (/_next/static/**) — cache hard for a year.
+    <FilesMatch "\.(js|css|woff2?|ttf|otf|eot)$">
+        ExpiresDefault "access plus 1 year"
+        <IfModule mod_headers.c>
+            Header set Cache-Control "public, max-age=31536000, immutable"
+        </IfModule>
+    </FilesMatch>
+
+    # Images live under /images/** with stable, non-hashed names — change the
+    # filename (as we do for WebP swaps) to bust. 30 days is a safe middle ground.
+    <FilesMatch "\.(png|jpe?g|webp|gif|svg|ico|avif)$">
+        ExpiresDefault "access plus 30 days"
+        <IfModule mod_headers.c>
+            Header set Cache-Control "public, max-age=2592000"
+        </IfModule>
+    </FilesMatch>
+
+    # HTML must stay fresh so a redeploy is picked up immediately.
+    <FilesMatch "\.html$">
+        ExpiresDefault "access plus 0 seconds"
+        <IfModule mod_headers.c>
+            Header set Cache-Control "public, max-age=0, must-revalidate"
+        </IfModule>
+    </FilesMatch>
+</IfModule>

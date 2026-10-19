@@ -1,0 +1,1659 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── 4-Way Theme System ─── */
+
+/* Default: Dark Gradient */
+:root,
+[data-theme="dark-gradient"] {
+  --bg-primary: 8 12 101;
+  --bg-secondary: 10 14 107;
+  --text-primary: 255 255 255;
+  --text-muted: 200 205 240;
+  --accent-primary: 234 88 12;
+  --accent-primary-end: 249 115 22;
+  --accent-secondary: 249 115 22;
+  /* card-bg: elevated surface above the dark navy background */
+  --card-bg: 20 28 140;
+  /* card-border: subtle lighter-navy border, works at full opacity */
+  --card-border: 50 65 185;
+  --surface-glass: 255 255 255;
+  --logo-filter: brightness(0) saturate(100%) invert(100%) drop-shadow(0 2px 10px rgba(249, 115, 22, 0.35));
+  --scrollbar-track: 7 11 85;
+  --scrollbar-thumb: 249 115 22;
+  /* deck card vars for PockitPromise swipe cards */
+  --deck-card-bg: rgba(255, 255, 255, 0.07);
+  --deck-card-inner-bg: rgba(255, 255, 255, 0.03);
+  --deck-card-border: rgba(255, 255, 255, 0.12);
+  --deck-card-divider: rgba(255, 255, 255, 0.06);
+  /* phone mockup theming */
+  --phone-shell-from: 45 55 72;
+  --phone-shell-to: 13 17 23;
+  --phone-screen: 5 8 16;
+  --phone-header: 15 23 42;
+  --phone-search: 30 41 59;
+  --phone-search-border: 51 65 85;
+  --phone-content: 2 6 23;
+  --phone-card: 15 23 42;
+  --phone-card-border: 30 41 59;
+  --phone-footer: 2 6 23;
+  --phone-divider: 30 41 59;
+  --phone-text: 255 255 255;
+  --phone-subtext: 100 116 139;
+  --phone-btn: 71 85 105;
+  --nav-bg: 18 24 130;
+}
+
+[data-theme="dark-flat"] {
+  --bg-primary: 4 6 51;
+  --bg-secondary: 8 12 101;
+  --text-primary: 255 255 255;
+  --text-muted: 203 213 225;
+  --accent-primary: 249 115 22;
+  --accent-primary-end: 249 115 22;
+  --accent-secondary: 249 115 22;
+  --card-bg: 12 18 88;
+  --card-border: 35 55 145;
+  --surface-glass: 255 255 255;
+  --logo-filter: brightness(0) saturate(100%) invert(100%) drop-shadow(0 2px 10px rgba(249, 115, 22, 0.35));
+  --scrollbar-track: 4 6 51;
+  --scrollbar-thumb: 249 115 22;
+  --deck-card-bg: rgba(255, 255, 255, 0.07);
+  --deck-card-inner-bg: rgba(255, 255, 255, 0.03);
+  --deck-card-border: rgba(255, 255, 255, 0.12);
+  --deck-card-divider: rgba(255, 255, 255, 0.06);
+  --phone-shell-from: 45 55 72;
+  --phone-shell-to: 13 17 23;
+  --phone-screen: 5 8 16;
+  --phone-header: 15 23 42;
+  --phone-search: 30 41 59;
+  --phone-search-border: 51 65 85;
+  --phone-content: 2 6 23;
+  --phone-card: 15 23 42;
+  --phone-card-border: 30 41 59;
+  --phone-footer: 2 6 23;
+  --phone-divider: 30 41 59;
+  --phone-text: 255 255 255;
+  --phone-subtext: 100 116 139;
+  --phone-btn: 71 85 105;
+  --nav-bg: 14 20 90;
+}
+
+[data-theme="light-corporate"] {
+  --bg-primary: 255 255 255;
+  --bg-secondary: 248 250 252;
+  --text-primary: 8 12 101;
+  --text-muted: 51 65 85;
+  --accent-primary: 234 88 12;
+  /* slightly darker end stop for contrast on white */
+  --accent-primary-end: 249 115 22;
+  --accent-secondary: 249 115 22;
+  /* white card on white bg — shadow/border provides separation */
+  --card-bg: 255 255 255;
+  /* soft gray-blue border, visible at full opacity on white */
+  --card-border: 214 220 240;
+  --surface-glass: 8 12 101;
+  --logo-filter: none;
+  --scrollbar-track: 235 238 255;
+  --scrollbar-thumb: 234 88 12;
+  --deck-card-bg: rgba(255, 255, 255, 0.92);
+  --deck-card-inner-bg: rgba(8, 12, 101, 0.03);
+  --deck-card-border: rgba(8, 12, 101, 0.12);
+  --deck-card-divider: rgba(8, 12, 101, 0.06);
+  --phone-shell-from: 210 218 235;
+  --phone-shell-to: 185 198 222;
+  --phone-screen: 246 248 255;
+  --phone-header: 255 255 255;
+  --phone-search: 241 244 251;
+  --phone-search-border: 203 212 232;
+  --phone-content: 241 244 251;
+  --phone-card: 255 255 255;
+  --phone-card-border: 214 220 240;
+  --phone-footer: 255 255 255;
+  --phone-divider: 214 220 240;
+  --phone-text: 8 12 101;
+  --phone-subtext: 100 116 139;
+  --phone-btn: 185 198 222;
+  --nav-bg: 240 241 245;
+}
+
+[data-theme="light-soft"] {
+  --bg-primary: 238 242 255;
+  --bg-secondary: 255 255 255;
+  --text-primary: 10 14 107;
+  --text-muted: 71 85 105;
+  --accent-primary: 249 115 22;
+  --accent-primary-end: 249 115 22;
+  --accent-secondary: 249 115 22;
+  --card-bg: 255 255 255;
+  --card-border: 210 215 245;
+  --surface-glass: 10 14 107;
+  --logo-filter: none;
+  --scrollbar-track: 225 230 255;
+  --scrollbar-thumb: 249 115 22;
+  --deck-card-bg: rgba(255, 255, 255, 0.92);
+  --deck-card-inner-bg: rgba(10, 14, 107, 0.03);
+  --deck-card-border: rgba(10, 14, 107, 0.12);
+  --deck-card-divider: rgba(10, 14, 107, 0.06);
+  --phone-shell-from: 215 222 245;
+  --phone-shell-to: 190 200 230;
+  --phone-screen: 248 250 255;
+  --phone-header: 255 255 255;
+  --phone-search: 238 242 255;
+  --phone-search-border: 210 215 245;
+  --phone-content: 238 242 255;
+  --phone-card: 255 255 255;
+  --phone-card-border: 210 215 245;
+  --phone-footer: 255 255 255;
+  --phone-divider: 210 215 245;
+  --phone-text: 10 14 107;
+  --phone-subtext: 100 116 139;
+  --phone-btn: 190 200 230;
+  --nav-bg: 232 235 242;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  color: rgb(var(--text-primary));
+  background: rgb(var(--bg-primary));
+}
+
+@media (min-width: 768px) {
+  body {
+    background-image: radial-gradient(circle at 1px 1px, rgb(var(--text-primary) / 0.025) 1px, transparent 0);
+    background-size: 24px 24px;
+  }
+}
+
+@layer utilities {
+  .app-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .app-scrollbar::-webkit-scrollbar-track {
+    background: rgb(var(--scrollbar-track, 7 11 85));
+  }
+
+  .app-scrollbar::-webkit-scrollbar-thumb {
+    background: rgb(var(--scrollbar-thumb, 249 115 22));
+    border-radius: 3px;
+  }
+
+  .app-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--scrollbar-thumb, 249 115 22)) rgb(var(--scrollbar-track, 7 11 85));
+  }
+}
+
+/* =============================================================
+   CHIP CHATBOT — Full corrected styles (paste into globals.css)
+   ============================================================= */
+
+/* ── Outer wrapper (fixed position) ── */
+.cbot-wrap {
+  position: fixed;
+  bottom: 83px;
+  right: 25px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.cbot-wrap.is-open {
+  bottom: 20px;
+}
+
+/* ── Chat window ──
+   Uses min() so it never overflows the viewport edge.
+   height is flex-driven — no fixed heights anywhere.        */
+.cbot-window {
+  width: min(360px, calc(100vw - 32px));
+  /* clamp total height so it fits even on short screens */
+  max-height: min(560px, calc(100svh - 110px));
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid #dde1f0;
+  box-shadow: 0 10px 36px rgba(30, 40, 120, 0.15);
+  display: flex;
+  flex-direction: column;
+  /* header | messages(flex:1) | input | footer */
+  overflow: hidden;
+  animation: cbotSlideUp 0.22s ease-out;
+}
+
+@keyframes cbotSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Header ── */
+.cbot-header {
+  background: #3b3fa8;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  /* never shrink */
+}
+
+.cbot-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cbot-av-outer {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.cbot-av-inner {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cbot-online {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  width: 10px;
+  height: 10px;
+  background: #4ade80;
+  border: 2px solid #3b3fa8;
+  border-radius: 50%;
+}
+
+.cbot-name {
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.cbot-sub {
+  color: rgba(255, 255, 255, 0.70);
+  font-size: 11px;
+  margin: 0;
+}
+
+.cbot-close-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.cbot-close-btn:hover {
+  background: rgba(255, 255, 255, 0.30);
+}
+
+/* ── Messages scroll area ──
+   flex:1 + min-height:0 is the correct pattern to let a flex
+   child scroll without blowing out the parent height.        */
+.cbot-messages {
+  flex: 1;
+  min-height: 0;
+  /* ← KEY: allows flex child to shrink & scroll */
+  overflow-y: auto;
+  padding: 14px 12px;
+  background: #f5f6fb;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.cbot-messages::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Quick-select pill chips ── */
+.cbot-chips-grid {
+  display: flex;
+  flex-wrap: wrap;
+  /* wraps into rows of 2 naturally */
+  gap: 8px;
+}
+
+.cbot-chip {
+  padding: 6px 13px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1.5px solid #cdd1ee;
+  background: #fff;
+  color: #2d2f6b;
+  white-space: nowrap;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.cbot-chip:hover {
+  background: #eeeffe;
+  border-color: #a8aee8;
+}
+
+.cbot-chip:active {
+  transform: scale(0.97);
+}
+
+.cbot-chip-sm {
+  font-size: 11px;
+  padding: 5px 11px;
+}
+
+.cbot-followup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-left: 36px;
+}
+
+.cbot-divider {
+  border: none;
+  border-top: 1px solid #e4e6f3;
+  margin: 2px 0;
+}
+
+/* ── Message row ── */
+.cbot-row {
+  display: flex;
+  gap: 8px;
+  animation: cbotFadeUp 0.2s ease-out;
+}
+
+.cbot-user-row {
+  flex-direction: row-reverse;
+}
+
+@keyframes cbotFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Message avatars ── */
+.cbot-msg-av {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.cbot-bot-av {
+  background: #fff;
+  border: 1.5px solid #dde1f0;
+}
+
+.cbot-user-av {
+  background: #3b3fa8;
+}
+
+/* ── Message body ── */
+.cbot-body {
+  display: flex;
+  flex-direction: column;
+  /* fills remaining row width minus avatar+gap */
+  min-width: 0;
+  max-width: calc(100% - 36px);
+  gap: 3px;
+}
+
+.cbot-bubble {
+  padding: 9px 12px;
+  font-size: 13px;
+  line-height: 1.55;
+  word-wrap: break-word;
+}
+
+/* ── Bot reply Markdown (ChatMarkdown.tsx) ── */
+.cbot-md p {
+  margin: 0;
+}
+
+.cbot-md > * + * {
+  margin-top: 6px;
+}
+
+.cbot-md ul,
+.cbot-md ol {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.cbot-md ul {
+  list-style: disc;
+}
+
+.cbot-md ol {
+  list-style: decimal;
+}
+
+.cbot-md li + li {
+  margin-top: 3px;
+}
+
+.cbot-md strong {
+  font-weight: 700;
+}
+
+.cbot-md .cbot-md-h {
+  font-weight: 700;
+}
+
+.cbot-md code {
+  font-size: 12px;
+  background: rgba(59, 63, 168, 0.08);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+
+.cbot-md a {
+  color: #3b3fa8;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-word;
+}
+
+.cbot-bot-bubble {
+  background: #fff;
+  border: 1px solid #e3e6f4;
+  border-radius: 14px 14px 14px 3px;
+  color: #1e2060;
+  box-shadow: 0 1px 3px rgba(40, 50, 140, 0.07);
+}
+
+.cbot-user-bubble {
+  background: #3b3fa8;
+  color: #fff;
+  border-radius: 14px 14px 3px 14px;
+}
+
+.cbot-time {
+  font-size: 10px;
+  color: #a0a5c0;
+  padding: 0 2px;
+}
+
+.cbot-time-r {
+  text-align: right;
+}
+
+/* ── Typing dots ── */
+.cbot-typing {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.cbot-typing span {
+  width: 6px;
+  height: 6px;
+  background: #9197d8;
+  border-radius: 50%;
+  animation: cbotBounce 1.2s infinite;
+}
+
+.cbot-typing span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.cbot-typing span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes cbotBounce {
+
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+
+  40% {
+    transform: translateY(-5px);
+  }
+}
+
+/* ── Service card ── */
+.cbot-service-card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e0e7ff;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  margin-top: 2px;
+}
+
+.cbot-sc-head {
+  background: #3b3fa8;
+  padding: 7px 11px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.cbot-sc-head span:last-child {
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 400;
+}
+
+.cbot-sc-body {
+  padding: 7px 11px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+
+.cbot-sc-price {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.cbot-tag {
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid;
+  font-weight: 500;
+}
+
+.cbot-tag-blue {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+
+.cbot-tag-green {
+  background: #f0fdf4;
+  color: #16a34a;
+  border-color: #bbf7d0;
+}
+
+.cbot-tag-orange {
+  background: #fff7ed;
+  color: #ea580c;
+  border-color: #fed7aa;
+}
+
+.cbot-sc-foot {
+  padding: 6px 11px 9px;
+}
+
+.cbot-book-btn {
+  display: block;
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: center;
+  background: #3b3fa8;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 7px;
+  border-radius: 9px;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.cbot-book-btn:hover {
+  opacity: 0.88;
+}
+
+/* ── Handoff banner ── */
+.cbot-handoff {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 10px;
+  padding: 9px 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.cbot-ho-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #c2410c;
+  margin: 0;
+}
+
+.cbot-ho-hours {
+  font-size: 10px;
+  color: #fb923c;
+  margin: 0;
+}
+
+.cbot-ho-btns {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.cbot-ho-call {
+  background: #f97316;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 7px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.cbot-ho-email {
+  border: 1px solid #fb923c;
+  color: #ea580c;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 7px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* ── Error banner ── */
+.cbot-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  padding: 9px 11px;
+}
+
+.cbot-err-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #b91c1c;
+  margin: 0 0 3px;
+}
+
+.cbot-err-sub {
+  font-size: 10px;
+  color: #ef4444;
+  margin: 0 0 7px;
+}
+
+.cbot-err-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.cbot-err-call {
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 7px;
+  text-decoration: none;
+}
+
+.cbot-err-email {
+  border: 1px solid #fca5a5;
+  color: #b91c1c;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 7px;
+  text-decoration: none;
+}
+
+/* ── Input area ──
+   flex-shrink:0 ensures it's always visible at the bottom.  */
+.cbot-input-area {
+  flex-shrink: 0;
+  padding: 10px 12px 10px;
+  border-top: 1px solid #eef0f8;
+  background: #fff;
+}
+
+.cbot-listening {
+  font-size: 11px;
+  color: #3b3fa8;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 6px;
+  animation: cbotPulse 1.5s infinite;
+}
+
+.cbot-l-dot {
+  width: 6px;
+  height: 6px;
+  background: #3b3fa8;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Row: input + buttons side by side */
+.cbot-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cbot-input {
+  flex: 1;
+  /* ← takes all remaining width */
+  min-width: 0;
+  /* ← prevents flex overflow */
+  padding: 9px 14px;
+  border: 1.5px solid #e3e6f4;
+  border-radius: 999px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  background: #f5f6fb;
+  color: #1e2060;
+  transition: border 0.15s, box-shadow 0.15s;
+}
+
+.cbot-input:focus {
+  border-color: #9197d8;
+  box-shadow: 0 0 0 3px rgba(100, 110, 220, 0.12);
+  background: #fff;
+}
+
+.cbot-input:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+}
+
+.cbot-input-btns {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  /* buttons never shrink */
+}
+
+.cbot-icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.cbot-mic {
+  background: #f0f1f9;
+  color: #6b7280;
+}
+
+.cbot-mic:hover {
+  background: #eeeffe;
+  color: #3b3fa8;
+}
+
+.cbot-mic.active {
+  background: #3b3fa8;
+  color: #fff;
+  animation: cbotPulse 1.5s infinite;
+}
+
+.cbot-mic:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cbot-send {
+  background: #3b3fa8;
+  color: #fff;
+}
+
+.cbot-send:hover:not(:disabled) {
+  background: #5056c8;
+  box-shadow: 0 3px 10px rgba(59, 63, 168, 0.35);
+  transform: scale(1.05);
+}
+
+.cbot-send:disabled {
+  background: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* ── Footer ── */
+.cbot-footer {
+  flex-shrink: 0;
+  background: #fff;
+  border-top: 1px solid #f0f1fa;
+  padding: 6px 12px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.cbot-footer-txt {
+  font-size: 11px;
+  color: #9196be;
+}
+
+/* ── Mobile-OTP login (ChatLogin.tsx) ──
+   Accent comes from the --cbot-accent custom property set inline,
+   so it follows the widget's blue (light) / orange (dark) header.  */
+.cbot-login-btn {
+  height: 30px;
+  padding: 0 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.cbot-login-btn:hover,
+.cbot-login-btn[aria-expanded="true"] {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.cbot-login {
+  --cbot-accent: #3b3fa8;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 14px;
+  background: #f5f6fb;
+}
+
+.cbot-login-card {
+  background: #fff;
+  border: 1px solid #e3e6f4;
+  border-radius: 14px;
+  padding: 18px 16px 14px;
+}
+
+.cbot-login-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e2060;
+  margin: 0 0 4px;
+}
+
+.cbot-login-sub {
+  font-size: 12px;
+  color: #6b7091;
+  margin: 0 0 14px;
+  line-height: 1.45;
+}
+
+.cbot-login-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.cbot-login-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #2d2f6b;
+  margin: 0 0 5px;
+}
+
+.cbot-login-input {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 12px;
+  margin-bottom: 12px;
+  border: 1.5px solid #e3e6f4;
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #1e2060;
+  background: #f5f6fb;
+  outline: none;
+  transition: border 0.15s, box-shadow 0.15s;
+}
+
+.cbot-login-input:focus {
+  border-color: var(--cbot-accent);
+  box-shadow: 0 0 0 3px rgba(100, 110, 220, 0.12);
+  background: #fff;
+}
+
+.cbot-login-phone {
+  display: flex;
+  gap: 6px;
+}
+
+.cbot-login-cc {
+  flex-shrink: 0;
+  height: 38px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  border: 1.5px solid #e3e6f4;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #2d2f6b;
+  background: #fff;
+}
+
+.cbot-login-otp {
+  font-size: 18px;
+  letter-spacing: 0.5em;
+  text-align: center;
+}
+
+.cbot-login-error {
+  font-size: 11px;
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 6px 9px;
+  margin: -4px 0 10px;
+}
+
+.cbot-login-primary {
+  height: 38px;
+  border: none;
+  border-radius: 999px;
+  background: var(--cbot-accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.cbot-login-primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.cbot-login-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cbot-login-links {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.cbot-login-link,
+.cbot-login-cancel {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--cbot-accent);
+  cursor: pointer;
+}
+
+.cbot-login-link:disabled {
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.cbot-login-cancel {
+  display: block;
+  margin: 14px auto 0;
+  color: #6b7091;
+  font-weight: 500;
+}
+
+/* "Account not found" → register in the app (ChatLogin.tsx) */
+.cbot-login-stores {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.cbot-login-store {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 7px 6px;
+  border-radius: 10px;
+  background: #111827;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.cbot-login-store:hover {
+  opacity: 0.88;
+}
+
+.cbot-login-store-sub {
+  font-size: 9px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.75;
+}
+
+.cbot-login-retry {
+  margin-top: 12px;
+  align-self: center;
+}
+
+/* ── Order status card (OrderStatusCard.tsx) ── */
+.cbot-order {
+  --cbot-accent: #3b3fa8;
+  margin-top: 6px;
+  background: #fff;
+  border: 1px solid #e3e6f4;
+  border-radius: 12px;
+  padding: 11px 12px;
+  box-shadow: 0 1px 3px rgba(40, 50, 140, 0.07);
+}
+
+.cbot-order-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cbot-order-label {
+  margin: 0;
+  font-size: 10px;
+  color: #8a8fb5;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cbot-order-no {
+  margin: 1px 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e2060;
+  word-break: break-all;
+}
+
+.cbot-order-pill {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(59, 63, 168, 0.1);
+  color: var(--cbot-accent);
+}
+
+.cbot-order-pill.is-completed {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.cbot-order-pill.is-cancelled,
+.cbot-order-pill.is-rejected {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.cbot-order-live {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #15803d;
+  background: #f0fdf4;
+  border-radius: 8px;
+  padding: 5px 8px;
+}
+
+.cbot-order-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: cbotPulse 1.5s infinite;
+}
+
+/* Vertical stepper */
+.cbot-steps {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+}
+
+.cbot-step {
+  position: relative;
+  display: flex;
+  gap: 9px;
+  padding-bottom: 9px;
+}
+
+.cbot-step:last-child {
+  padding-bottom: 0;
+}
+
+/* connector line between dots */
+.cbot-step:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 16px;
+  bottom: 0;
+  width: 2px;
+  background: #e3e6f4;
+}
+
+.cbot-step.is-done:not(:last-child)::before {
+  background: var(--cbot-accent);
+}
+
+.cbot-step-dot {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid #d5d9ee;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.cbot-step.is-done .cbot-step-dot {
+  border-color: var(--cbot-accent);
+  background: var(--cbot-accent);
+}
+
+.cbot-step.is-current .cbot-step-dot {
+  border-color: var(--cbot-accent);
+  box-shadow: 0 0 0 3px rgba(59, 63, 168, 0.15);
+}
+
+.cbot-step.is-current .cbot-step-dot::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cbot-accent);
+}
+
+.cbot-step-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cbot-step-label {
+  font-size: 12px;
+  line-height: 16px;
+  color: #9ca3c7;
+}
+
+.cbot-step.is-done .cbot-step-label {
+  color: #1e2060;
+}
+
+.cbot-step.is-current .cbot-step-label {
+  color: var(--cbot-accent);
+  font-weight: 700;
+}
+
+.cbot-step-at {
+  font-size: 10px;
+  color: #8a8fb5;
+}
+
+.cbot-order-facts {
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 1px dashed #e3e6f4;
+  display: grid;
+  gap: 4px;
+}
+
+.cbot-order-facts div {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.cbot-order-facts dt {
+  flex-shrink: 0;
+  width: 52px;
+  color: #8a8fb5;
+}
+
+.cbot-order-facts dd {
+  margin: 0;
+  color: #1e2060;
+  font-weight: 600;
+  min-width: 0;
+}
+
+.cbot-tech {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: #f5f6fb;
+  border-radius: 10px;
+  padding: 7px 8px;
+}
+
+.cbot-tech-avatar {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--cbot-accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cbot-tech-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.cbot-tech-name {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e2060;
+}
+
+.cbot-tech-sub {
+  margin: 0;
+  font-size: 10px;
+  color: #8a8fb5;
+}
+
+.cbot-tech-star {
+  color: #f59e0b;
+}
+
+.cbot-tech-call {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #16a34a;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 999px;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.cbot-tech-call:hover {
+  opacity: 0.9;
+}
+
+/* ── Pincode serviceability badge (PincodeBadge.tsx) ── */
+.cbot-pin {
+  margin-top: 6px;
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  border-radius: 12px;
+  padding: 9px 11px;
+  border: 1px solid;
+}
+
+.cbot-pin.is-ok {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.cbot-pin.is-no {
+  background: #f5f6fa;
+  border-color: #e3e6f0;
+}
+
+.cbot-pin-icon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.cbot-pin.is-ok .cbot-pin-icon {
+  background: #16a34a;
+}
+
+.cbot-pin.is-no .cbot-pin-icon {
+  background: #9ca3af;
+}
+
+.cbot-pin-body {
+  min-width: 0;
+}
+
+.cbot-pin-title {
+  margin: 0;
+  font-size: 12px;
+  color: #1e2060;
+}
+
+.cbot-pin-sub {
+  margin: 1px 0 0;
+  font-size: 11px;
+  color: #6b7091;
+}
+
+.cbot-pin-tag {
+  display: inline-block;
+  margin-top: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #b45309;
+  background: #fef3c7;
+  border-radius: 999px;
+  padding: 2px 7px;
+}
+
+/* "Use my location" chip */
+.cbot-chip-locate {
+  border-style: dashed;
+}
+
+/* Follow-up chips that DO something (call, book, locate, handoff, login) */
+.cbot-chip-action {
+  border-color: #a8aee8;
+  background: #eeeffe;
+  font-weight: 600;
+}
+
+/* WhatsApp button on the human-handoff card */
+.cbot-ho-wa {
+  background: #25d366;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 7px;
+  text-decoration: none;
+}
+
+/* Reply-language picker in the footer */
+.cbot-lang {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: #6b7091;
+}
+
+.cbot-lang select {
+  border: 1px solid #e3e6f4;
+  border-radius: 999px;
+  background: #f5f6fb;
+  color: #2d2f6b;
+  font-size: 11px;
+  font-family: inherit;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+/* ── FAB / trigger ── */
+.cbot-fab-wrap {
+  position: relative;
+}
+
+.cbot-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cbot-fab-label {
+  background: #3b3fa8;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(59, 63, 168, 0.28);
+  white-space: nowrap;
+  animation: cbotSlideLeft 0.25s ease;
+}
+
+
+@keyframes cbotSlideLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.cbot-trigger.is-open .cbot-fab-label {
+  display: none;
+}
+
+.cbot-fab-icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cbot-ping,
+.cbot-ping-2 {
+  position: absolute;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  pointer-events: none;
+  top: 0;
+  left: 0;
+}
+
+.cbot-ping {
+  background: rgba(59, 63, 168, 0.30);
+  animation: cbotPing 1.6s infinite;
+}
+
+.cbot-ping-2 {
+  background: rgba(59, 63, 168, 0.18);
+  animation: cbotPing 1.6s infinite;
+  animation-delay: 0.4s;
+}
+
+.cbot-notif {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 16px;
+  height: 16px;
+  background: #3b3fa8;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  border-radius: 50%;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.cbot-fab {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #3b3fa8;
+  color: #fff;
+  transition: all 0.3s;
+  box-shadow: 0 4px 16px rgba(59, 63, 168, 0.42);
+}
+
+.cbot-fab:hover {
+  transform: scale(1.08);
+  box-shadow: 0 8px 24px rgba(59, 63, 168, 0.52);
+}
+
+.cbot-fab.is-open {
+  background: #4b5563;
+  box-shadow: none;
+}
+
+.cbot-fab.is-open:hover {
+  transform: scale(1.04);
+}
+
+@keyframes cbotPing {
+  0% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+
+  70% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(2.1);
+    opacity: 0;
+  }
+}
+
+@keyframes cbotPulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* ================================================================
+   MOBILE RESPONSIVE  (<= 480px)
+   On small screens the window goes nearly full-width and the
+   label pill is hidden to save space.
+   ================================================================ */
+@media (max-width: 480px) {
+  .cbot-wrap {
+    right: 12px;
+    bottom: 72px;
+  }
+
+  .cbot-wrap.is-open {
+    right: 12px;
+    bottom: 12px;
+  }
+
+  .cbot-window {
+    width: calc(100vw - 24px);
+    max-height: min(560px, calc(100svh - 110px));
+
+    border-radius: 16px;
+  }
+
+  .cbot-fab-label {
+    display: none;
+    /* hide label on mobile — saves space */
+  }
+
+  /* slightly smaller FAB on very small screens */
+  .cbot-fab,
+  .cbot-ping,
+  .cbot-ping-2 {
+    width: 50px;
+    height: 50px;
+  }
+}
