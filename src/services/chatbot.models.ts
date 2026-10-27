@@ -16,6 +16,8 @@ export interface ChatMessage {
         warranty?: string;
     } | null;
     showHumanHandoff?: boolean;
+    /** Set on replies typed by a Pockit agent in Chatwoot (live takeover). */
+    agent?: string;
     order?: OrderCard | null;      // order status tracker (backend get_order_details)
     pincode?: PincodeCard | null;  // serviceability badge (backend check_service_availability)
 }

@@ -75,6 +75,133 @@ The point of the example is to show the **shape** of a well-formed entry. Real e
 # Entries
 
 <!-- NEW ENTRIES GO HERE, DIRECTLY BELOW THIS LINE -->
+## [2026-10-27] #134 — chip.ai website chats mirrored to Chatwoot, with live agent takeover
+- **Type:** feature
+- **Scope:** `src/services/chatwootBridge.ts` (new), `src/components/chatbot/Chatbot.tsx`, `src/components/chatbot/chatStrings.ts`, `src/services/chatbot.models.ts`, `src/app/globals.css`, `CLAUDE.md`
+- **Why:** The support team (Chatwoot at `chat.pockitengineers.com`) needs to see every chip.ai conversation and take over when chip.ai can't help.
+- **Related:** `chip-bridge` service (repo `pockit-chatwoot`, `chip-bridge/web.js`); decisions in CLAUDE.md → "chip.ai ↔ Chatwoot".
+
+### Summary
+Every website chat is copied to a Chatwoot API inbox through the `chip-bridge` service. If an agent replies in Chatwoot, or chip.ai fails during support hours (10 AM–7 PM IST), the chat switches to "human" mode: chip.ai stays silent, the agent's replies appear in the same chat window (polling), and visitors who aren't logged in are asked for name + mobile. Resolving the chat in Chatwoot hands it back to chip.ai. "Talk to a human" still shows the Call/WhatsApp/Email card and additionally flags the chat for the team (Chatwoot **High** priority + private note). Everything is behind `NEXT_PUBLIC_CHATWOOT_BRIDGE_URL`; unset (or bridge down) = exactly the previous behaviour.
+
+### Before
+```tsx
+// src/components/chatbot/Chatbot.tsx — sendMessage (REST path)
+        setFollowUpChips([]);
+        setIsLoading(true);
+        ...
+            setFollowUpChips(parsed.followUpChips ?? []);
+        } catch {
+            setMessages(prev => [...prev, { type: "bot", text: "", isError: true, time: getTime() }]);
+            setFollowUpChips(ERROR_CHIPS);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [inputText, lang, isLoading]);
+
+// runChip
+            case "handoff":
+                setFollowUpChips([]);
+                setMessages(prev => [...prev, { type: "bot", text: t.handoffIntro, showHumanHandoff: true, time: getTime() }]);
+                return;
+```
+
+### After
+```tsx
+// src/components/chatbot/Chatbot.tsx — sendMessage (REST path)
+        setFollowUpChips([]);
+
+        // A Pockit agent is handling this chat: send to Chatwoot only, chip.ai stays silent.
+        if (chatModeRef.current === "human") {
+            const mode = await ChatwootBridge.mirror("user", text);
+            if (mode === "bot") applyMode("bot");
+            else return;
+        } else {
+            void ChatwootBridge.mirror("user", text);
+        }
+        setIsLoading(true);
+        ...
+            setFollowUpChips(parsed.followUpChips ?? []);
+            if (parsed.message) void ChatwootBridge.mirror("bot", parsed.message);
+        } catch (err) {
+            // chip.ai failed: during support hours the bridge hands the chat to an agent.
+            const mode = await ChatwootBridge.handoff(`chip.ai error: ${err instanceof Error ? err.message : "unknown"}`);
+            if (mode === "human") {
+                applyMode("human");
+            } else {
+                setMessages(prev => [...prev, { type: "bot", text: "", isError: true, time: getTime() }]);
+                setFollowUpChips(ERROR_CHIPS);
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    }, [inputText, lang, isLoading, applyMode]);
+
+// runChip
+            case "handoff":
+                setFollowUpChips([]);
+                setMessages(prev => [...prev, { type: "bot", text: t.handoffIntro, showHumanHandoff: true, time: getTime() }]);
+                // Not a live chat (agreed 2026-10-27): flags the chat in Chatwoot for follow-up.
+                void ChatwootBridge.handoff("talk_to_human");
+                return;
+
+// New: chatMode state + applyMode() (posts "X has joined" / "chip.ai is back" once per switch),
+// a polling effect (4 s in human mode, 10 s in bot mode, only while the chat is open and started),
+// an agent label inside agent bubbles, and a name + mobile form above the input in human mode
+// for visitors who aren't logged in. WS onDone also mirrors the bot reply (WS is off in prod).
+```
+
+```ts
+// src/services/chatwootBridge.ts — (new file)
+// ChatwootBridge.mirror(role, text) / handoff(reason) / shareContact(name, phone) / poll(after)
+// Base URL: NEXT_PUBLIC_CHATWOOT_BRIDGE_URL. Fail-open: any error → null, chatbot unaffected.
+// Logged-in customers send { name, mobile, customer_id } from the chat login with every call.
+```
+
+```ts
+// src/components/chatbot/chatStrings.ts — WidgetStrings (Before)
+    handoffIntro: string;
+    /** Starter chips for anonymous visitors. */
+
+// (After) — added in English / Hindi / Marathi
+    handoffIntro: string;
+    /** Live takeover from Chatwoot (see services/chatwootBridge.ts). */
+    agentJoined: (name: string) => string;
+    botBack: string;
+    contactPrompt: string;
+    contactName: string;
+    contactPhone: string;
+    contactSend: string;
+    contactThanks: string;
+    /** Starter chips for anonymous visitors. */
+```
+
+```ts
+// src/services/chatbot.models.ts — ChatMessage (Before)
+    showHumanHandoff?: boolean;
+    order?: OrderCard | null;
+// (After)
+    showHumanHandoff?: boolean;
+    /** Set on replies typed by a Pockit agent in Chatwoot (live takeover). */
+    agent?: string;
+    order?: OrderCard | null;
+```
+
+```css
+/* src/app/globals.css — (Before) */
+/* ── Handoff banner ── */
+/* (After) — new block above it */
+/* ── Live takeover (Chatwoot agent replies + visitor contact form) ── */
+.cbot-agent-label { ... }  .cbot-contact { ... }  .cbot-contact-title { ... }
+.cbot-contact-row { ... }  .cbot-contact-input { ... }  .cbot-contact-send { ... }
+```
+
+### Notes
+- **Env:** set `NEXT_PUBLIC_CHATWOOT_BRIDGE_URL=https://chat.pockitengineers.com/chip-bridge` on the cPanel build (GitHub secret used by `deploy-cpanel.yml`) and on the Vercel mirror. Leave it unset to ship the code dormant.
+- **Bridge side:** the bridge must list the site origins in `WIDGET_ORIGINS` (pockitengineers.com, www., and the Vercel mirror) or the browser blocks the calls (CORS).
+- **Verified:** `tsc --noEmit` clean, eslint clean on touched files; end-to-end in a real browser against the dev server with a fake chip.ai + fake Chatwoot: mirroring, "Talk to a human" → High priority + note, agent reply → takeover + agent bubble + contact form, customer message in human mode goes to Chatwoot only (0 chip.ai calls), contact saved as +91…, resolve → chip.ai back, chip.ai failure in hours → takeover instead of error card.
+- **Not covered:** WebSocket path is mirrored but untested (WS is disabled in production per CLAUDE.md).
+
 ## [2026-10-16] #133 — New `/delete-account` page for Google Play's Data safety form
 - **Type:** feature
 - **Scope:** `src/app/delete-account/page.tsx` (new), `src/app/sitemap.xml/route.static.ts`, `src/app/[slug]/page.static.tsx`, `sanity/schemas/landingPage.ts`, `src/constants/copy.ts`, `README.md`

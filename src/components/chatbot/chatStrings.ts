@@ -21,6 +21,14 @@ interface WidgetStrings {
     locate: string;
     locating: string;
     handoffIntro: string;
+    /** Live takeover from Chatwoot (see services/chatwootBridge.ts). */
+    agentJoined: (name: string) => string;
+    botBack: string;
+    contactPrompt: string;
+    contactName: string;
+    contactPhone: string;
+    contactSend: string;
+    contactThanks: string;
     /** Starter chips for anonymous visitors. */
     starters: string[];
     /** Starter chips for logged-in Pockit customers (order-first). */
@@ -34,6 +42,13 @@ export const CHAT_STRINGS: Record<ChatLanguage, WidgetStrings> = {
         locate: "📍 Do you serve my area?",
         locating: "Finding your pincode…",
         handoffIntro: "Here's how to reach our support team:",
+        agentJoined: name => `${name} from our support team has joined the chat.`,
+        botBack: "Our team has wrapped up. chip.ai is back to help you.",
+        contactPrompt: "So our team can call you back if needed, please share your details:",
+        contactName: "Your name",
+        contactPhone: "Mobile number",
+        contactSend: "Share",
+        contactThanks: "Thanks! Our team has your details.",
         starters: ["My laptop is slow", "Printer not working", "WiFi is weak", "Book a service", "What areas do you cover?"],
         customerStarters: [
             { label: "📦 Track my latest order", value: "What is the status of my latest order?" },
@@ -48,6 +63,13 @@ export const CHAT_STRINGS: Record<ChatLanguage, WidgetStrings> = {
         locate: "📍 क्या आप मेरे इलाके में सेवा देते हैं?",
         locating: "आपका पिनकोड ढूँढ रहे हैं…",
         handoffIntro: "हमारी सपोर्ट टीम से ऐसे संपर्क करें:",
+        agentJoined: name => `हमारी सपोर्ट टीम से ${name} चैट में जुड़ गए हैं।`,
+        botBack: "हमारी टीम ने बात पूरी कर ली है। chip.ai फिर से आपकी मदद के लिए यहाँ है।",
+        contactPrompt: "ज़रूरत पड़ने पर हमारी टीम आपको कॉल कर सके, इसलिए अपनी जानकारी दें:",
+        contactName: "आपका नाम",
+        contactPhone: "मोबाइल नंबर",
+        contactSend: "भेजें",
+        contactThanks: "धन्यवाद! हमारी टीम के पास आपकी जानकारी है।",
         starters: ["मेरा लैपटॉप धीमा है", "प्रिंटर काम नहीं कर रहा", "WiFi कमज़ोर है", "सेवा बुक करें", "आप किन इलाकों में सेवा देते हैं?"],
         customerStarters: [
             { label: "📦 मेरा ताज़ा ऑर्डर ट्रैक करें", value: "मेरे सबसे नए ऑर्डर का स्टेटस क्या है?" },
@@ -62,6 +84,13 @@ export const CHAT_STRINGS: Record<ChatLanguage, WidgetStrings> = {
         locate: "📍 तुम्ही माझ्या भागात सेवा देता का?",
         locating: "तुमचा पिनकोड शोधत आहोत…",
         handoffIntro: "आमच्या सपोर्ट टीमशी असा संपर्क करा:",
+        agentJoined: name => `आमच्या सपोर्ट टीममधून ${name} चॅटमध्ये सामील झाले आहेत.`,
+        botBack: "आमच्या टीमने संभाषण पूर्ण केले आहे. chip.ai पुन्हा तुमच्या मदतीसाठी आहे.",
+        contactPrompt: "गरज पडल्यास आमची टीम तुम्हाला कॉल करू शकेल, म्हणून तुमची माहिती द्या:",
+        contactName: "तुमचे नाव",
+        contactPhone: "मोबाइल नंबर",
+        contactSend: "पाठवा",
+        contactThanks: "धन्यवाद! आमच्या टीमकडे तुमची माहिती आहे.",
         starters: ["माझा लॅपटॉप स्लो आहे", "प्रिंटर चालत नाही", "WiFi कमकुवत आहे", "सेवा बुक करा", "तुम्ही कोणत्या भागात सेवा देता?"],
         customerStarters: [
             { label: "📦 माझा नवीन ऑर्डर ट्रॅक करा", value: "माझ्या सर्वात नवीन ऑर्डरचे स्टेटस काय आहे?" },

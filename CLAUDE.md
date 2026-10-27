@@ -145,6 +145,17 @@ Locked decisions from `Pockit Engineers Seo Audit Presentation.pptx` (CHANGELOG 
 - Vercel Functions can't hold WebSockets, so the website talks to it over **REST only** (`POST /api/v1/chat`). Static builds must leave `NEXT_PUBLIC_WS_ENABLED` unset/`false`. `NEXT_PUBLIC_API_BASE` = the Vercel URL (GitHub secret used by `deploy-cpanel.yml`). Don't re-enable WS against the Vercel host.
 - The static website (with the chatbot) is also mirrored to the public repo `SarthakE1211/pockit-website` and hosted on Vercel (Next.js preset, default `npm run build` = static export). That repo has **no `.github/` workflows** on purpose, and it was pushed as a fresh single commit (no history). Re-push a snapshot with a temp index (`GIT_INDEX_FILE`, `git add -A`, drop `.github`, `commit-tree`), never by pushing `main`. It's a public repo, so scan for secrets before every push. `/api/technician.php` doesn't run there, so the technician form only works on cPanel.
 
+## chip.ai ↔ Chatwoot (decided 2026-10-27, CHANGELOG #134)
+
+- **What:** every chip.ai website chat is mirrored to the support team's Chatwoot (`chat.pockitengineers.com`, inbox "Website – chip.ai") through the **`chip-bridge`** service (repo `pockit-chatwoot`, `chip-bridge/web.js`, served at `https://chat.pockitengineers.com/chip-bridge`). The browser never talks to Chatwoot directly and holds no Chatwoot tokens. Widget side: `src/services/chatwootBridge.ts`, enabled by `NEXT_PUBLIC_CHATWOOT_BRIDGE_URL` (unset = feature off).
+- **All chats visible:** bot-handled chats sit in Chatwoot status `pending`; the team can watch any of them.
+- **Live takeover happens only when** (a) an agent replies in Chatwoot, or (b) chip.ai fails **during support hours (Mon–Sun 10 AM–7 PM IST)**. Takeover = Chatwoot status `open`; chip.ai is then silent and agent replies show in the widget (polling, 4 s human / 10 s bot). **Resolving** in Chatwoot returns the chat to chip.ai.
+- **"Talk to a human" is NOT a live chat (user's choice).** It keeps the Call / WhatsApp / Email card and additionally flags the conversation in Chatwoot (**High** priority + `follow_up` attribute + private note; Chatwoot bot tokens can't add labels) so the team assigns it and gets back to the customer. Don't turn it into a live handoff without asking.
+- **Outside support hours** chip.ai keeps answering; chip.ai failures are only flagged (High priority), no takeover.
+- **Customer details:** logged-in customers' name / mobile / `customer_id` come from the chat login (`getChatSession()`), never re-asked. Visitors who aren't logged in see a name + mobile form only once an agent has taken over.
+- **Fail-open is load-bearing:** any bridge error must leave the chatbot behaving exactly as before. Don't make chip.ai replies wait on the bridge.
+- **WhatsApp auto-answer by chip.ai is parked** (bridge `ENABLE_WHATSAPP_BOT=false`); revisit later.
+
 ## Testing expectations
 
 - The user runs the site on a dev server and will test changes live. After each pass, hand the user a **specific thing to click or visit** (URL, button, scenario) rather than assuming the build passing is sufficient verification.

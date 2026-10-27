@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatApiService } from "@/services/chatApiService";
+import { ChatwootBridge, type ChatMode } from "@/services/chatwootBridge";
 import { ChatChip, ChatMessage } from "@/services/chatbot.models";
 import { CHAT_LANGUAGES, CHAT_STRINGS, type ChatLanguage, isChatLanguage } from "./chatStrings";
 import { ChatAuthSession, ChatAuthUser, getChatSession, logoutChat, onChatSessionChange } from "@/services/chatAuth";
@@ -21,6 +22,11 @@ const getTime = () =>
     new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
 const LANG_STORAGE_KEY = "pockit_chat_lang";
+// Live takeover (Chatwoot): last agent message already shown + whether a visitor shared contact details.
+const AGENT_SEEN_KEY = "pockit_chat_agent_seen";
+const CONTACT_SHARED_KEY = "pockit_chat_contact_shared";
+const POLL_MS_HUMAN = 4000;
+const POLL_MS_BOT = 10000;
 const SUPPORT_PHONE = "+919240251266";
 
 // Shown when a reply fails.
@@ -87,6 +93,17 @@ export default function Chatbot() {
     useEffect(() => {
         setAuthUser(getChatSession()?.user ?? null);
         return onChatSessionChange(session => setAuthUser(session?.user ?? null));
+    }, []);
+
+    // ── Live takeover from Chatwoot (services/chatwootBridge.ts) ───────────────
+    // 'bot' = chip.ai answers; 'human' = a Pockit agent is replying from Chatwoot.
+    const [chatMode, setChatMode] = useState<ChatMode>("bot");
+    const chatModeRef = useRef<ChatMode>("bot");
+    const [contactShared, setContactShared] = useState(false);
+    const [contactName, setContactName] = useState("");
+    const [contactPhone, setContactPhone] = useState("");
+    useEffect(() => {
+        try { setContactShared(localStorage.getItem(CONTACT_SHARED_KEY) === "1"); } catch { /* storage blocked */ }
     }, []);
 
     // ── Transcript persistence (survives reloads + page navigation) ────────────
@@ -250,6 +267,7 @@ export default function Chatbot() {
                     });
 
                     setFollowUpChips(resp.followUpChips ?? []);
+                    if (resp.message) void ChatwootBridge.mirror("bot", resp.message);
                 },
 
                 onError: (err) => {
@@ -295,6 +313,58 @@ export default function Chatbot() {
         // Reconnects on login/logout: the socket carries the identity's token
         // and client id, so a new identity needs a fresh connection.
     }, [isOpen, authUser?.user_id]);
+
+    // Switch bot ⇄ human and tell the customer, once per transition.
+    const applyMode = useCallback((next: ChatMode, agentName?: string | null) => {
+        if (next === chatModeRef.current) return;
+        chatModeRef.current = next;
+        setChatMode(next);
+        setFollowUpChips([]);
+        setMessages(prev => [...prev, {
+            type: "bot",
+            text: next === "human" ? t.agentJoined(agentName || "Our team") : t.botBack,
+            time: getTime(),
+        }]);
+    }, [t]);
+
+    // Poll the bridge for agent replies while the chat is open and has started.
+    const hasConversation = messages.length > 0;
+    useEffect(() => {
+        if (!ChatwootBridge.enabled || !isOpen || !hasConversation) return;
+        let stopped = false;
+        let timer: ReturnType<typeof setTimeout>;
+        const tick = async () => {
+            let seen = 0;
+            try { seen = Number(localStorage.getItem(AGENT_SEEN_KEY) || 0); } catch { /* ignore */ }
+            const r = await ChatwootBridge.poll(seen);
+            if (stopped) return;
+            if (r) {
+                if (r.mode === "human") applyMode("human", r.agentName ?? r.messages[0]?.agent);
+                if (r.messages.length) {
+                    setIsLoading(false);
+                    setMessages(prev => [...prev, ...r.messages.map(m => ({
+                        type: "bot" as const, text: m.text, agent: m.agent, time: getTime(),
+                    }))]);
+                    try { localStorage.setItem(AGENT_SEEN_KEY, String(r.messages[r.messages.length - 1].id)); } catch { /* ignore */ }
+                }
+                if (r.mode === "bot") applyMode("bot");
+            }
+            timer = setTimeout(tick, chatModeRef.current === "human" ? POLL_MS_HUMAN : POLL_MS_BOT);
+        };
+        tick();
+        return () => { stopped = true; clearTimeout(timer); };
+    }, [isOpen, hasConversation, authUser?.user_id, applyMode]);
+
+    const submitContact = async () => {
+        const name = contactName.trim();
+        const phone = contactPhone.replace(/[^\d+]/g, "");
+        if (!name || phone.replace(/\D/g, "").length < 10) return;
+        if (await ChatwootBridge.shareContact(name, phone)) {
+            setContactShared(true);
+            try { localStorage.setItem(CONTACT_SHARED_KEY, "1"); } catch { /* ignore */ }
+            setMessages(prev => [...prev, { type: "bot", text: t.contactThanks, time: getTime() }]);
+        }
+    };
 
     // ── Login / logout ─────────────────────────────────────────────────────────
     const handleLoginSuccess = async (session: ChatAuthSession) => {
@@ -471,6 +541,15 @@ export default function Chatbot() {
         setMessages(prev => [...prev, userMsg]);
         setInputText("");
         setFollowUpChips([]);
+
+        // A Pockit agent is handling this chat: send to Chatwoot only, chip.ai stays silent.
+        if (chatModeRef.current === "human") {
+            const mode = await ChatwootBridge.mirror("user", text);
+            if (mode === "bot") applyMode("bot");
+            else return;
+        } else {
+            void ChatwootBridge.mirror("user", text);
+        }
         setIsLoading(true);
 
         const history = [...messagesRef.current, userMsg]
@@ -497,13 +576,20 @@ export default function Chatbot() {
                 time: getTime(),
             }]);
             setFollowUpChips(parsed.followUpChips ?? []);
-        } catch {
-            setMessages(prev => [...prev, { type: "bot", text: "", isError: true, time: getTime() }]);
-            setFollowUpChips(ERROR_CHIPS);
+            if (parsed.message) void ChatwootBridge.mirror("bot", parsed.message);
+        } catch (err) {
+            // chip.ai failed: during support hours the bridge hands the chat to an agent.
+            const mode = await ChatwootBridge.handoff(`chip.ai error: ${err instanceof Error ? err.message : "unknown"}`);
+            if (mode === "human") {
+                applyMode("human");
+            } else {
+                setMessages(prev => [...prev, { type: "bot", text: "", isError: true, time: getTime() }]);
+                setFollowUpChips(ERROR_CHIPS);
+            }
         } finally {
             setIsLoading(false);
         }
-    }, [inputText, lang, isLoading]);
+    }, [inputText, lang, isLoading, applyMode]);
 
     // ── "Do you serve my area?" — browser location → pincode → ask the bot ────
     // The bot's check_service_availability tool answers and returns the
@@ -567,6 +653,8 @@ export default function Chatbot() {
             case "handoff":
                 setFollowUpChips([]);
                 setMessages(prev => [...prev, { type: "bot", text: t.handoffIntro, showHumanHandoff: true, time: getTime() }]);
+                // Not a live chat (agreed 2026-10-27): flags the chat in Chatwoot for follow-up.
+                void ChatwootBridge.handoff("talk_to_human");
                 return;
             case "retry": {
                 const lastUser = [...messagesRef.current].reverse().find(m => m.type === "user");
@@ -708,6 +796,7 @@ export default function Chatbot() {
                                                         : "#f3f4f6",
                                             }}
                                         >
+                                            {msg.agent && <span className="cbot-agent-label">👤 {msg.agent} · Pockit team</span>}
                                             {msg.type === "bot" ? <ChatMarkdown text={msg.text} /> : msg.text}
                                             {msg.isStreaming && (
                                                 <span
@@ -825,6 +914,38 @@ export default function Chatbot() {
                             </div>
                         )}
                     </div>
+
+                    {/* ── Contact details when an agent takes over (visitors who aren't logged in) ── */}
+                    {ChatwootBridge.enabled && chatMode === "human" && !authUser && !contactShared && (
+                        <form
+                            className="cbot-contact"
+                            onSubmit={e => { e.preventDefault(); void submitContact(); }}
+                        >
+                            <p className="cbot-contact-title">{t.contactPrompt}</p>
+                            <div className="cbot-contact-row">
+                                <input
+                                    className="cbot-contact-input"
+                                    value={contactName}
+                                    onChange={e => setContactName(e.target.value)}
+                                    placeholder={t.contactName}
+                                    autoComplete="name"
+                                    maxLength={80}
+                                />
+                                <input
+                                    className="cbot-contact-input"
+                                    value={contactPhone}
+                                    onChange={e => setContactPhone(e.target.value)}
+                                    placeholder={t.contactPhone}
+                                    autoComplete="tel"
+                                    inputMode="tel"
+                                    maxLength={16}
+                                />
+                                <button type="submit" className="cbot-contact-send" style={{ background: accent }}>
+                                    {t.contactSend}
+                                </button>
+                            </div>
+                        </form>
+                    )}
 
                     {/* ── Input ── */}
                     <div className="cbot-input-area">
