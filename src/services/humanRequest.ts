@@ -28,9 +28,10 @@ const PERSON: RegExp[] = [
 
 const COMPLAINT: RegExp[] = [
     /\b(complain|complaint|complaining|escalate|escalation|fraud|cheated|cheating|scam|worst|pathetic|consumer court|legal action|not satisfied|unsatisfied|dissatisfied)\b/i,
-    /\bvery\s+(bad|poor)\s+(service|experience)\b/i,
-    /\b(shikayat|shikaayat|dhokha|bakwas|bekaar|bekar)\b/i,
-    /(शिकायत|धोखा|बकवास|तक्रार|फसवणूक)/,
+    /\bvery\s+(bad|poor)\s+(service|experience|response|reply)\b/i,
+    /\b(unhappy|not happy|upset|disappointed|frustrated|angry)\b/i,
+    /\b(shikayat|shikaayat|dhokha|bakwas|bekaar|bekar|naraz|naaraz|pareshan)\b/i,
+    /(शिकायत|धोखा|बकवास|नाराज़|नाराज|परेशान|तक्रार|फसवणूक|नाराज)/,
 ];
 
 export function detectHumanRequest(text: string): HumanRequest {

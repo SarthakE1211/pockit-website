@@ -162,6 +162,7 @@ Locked decisions from `Pockit Engineers Seo Audit Presentation.pptx` (CHANGELOG 
   - Customer details sent to the team: name, mobile, email, pincode, city, address, customer id, whichever the chat login provides (the backend currently returns name/mobile/customer id; email + address are requested from Sarthak).
   - After the team **resolves** a chat they took over, the agent conversation is posted to chip.ai (`POST /api/v1/chat/handback`, fail-open until the backend has it), because chip.ai keeps its own server-side history and ignores the widget's `history`.
   - A backend `handoff: true` (+ `handoff_summary`) flags the chat as "chip.ai couldn't help". Not a live chat.
+- **Handover timing (2026-10-28, CHANGELOG #136):** the bridge is the single source of truth for bot/human and checks Chatwoot on every call. chip.ai replies that arrive after an agent joined are dropped (widget waits ≤1.5 s for the bridge's answer). A chip.ai-failure handover says "connecting you…" until an agent actually replies; if nobody replies within 3 min (`HUMAN_WAIT_MINUTES`), chip.ai takes back the chat, the customer sees "Our team is busy" + the contact card, and the chat is flagged; for the next 30 min further chip.ai failures only flag. Bridge unreachable in human mode → chip.ai answers.
 
 ## Testing expectations
 

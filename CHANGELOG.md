@@ -75,6 +75,47 @@ The point of the example is to show the **shape** of a well-formed entry. Real e
 # Entries
 
 <!-- NEW ENTRIES GO HERE, DIRECTLY BELOW THIS LINE -->
+## [2026-10-28] #136 — Smoother bot ⇄ agent handover (no chip.ai reply after an agent joins, honest "connecting", team-busy fallback)
+- **Type:** fix
+- **Scope:** `src/components/chatbot/Chatbot.tsx`, `src/services/chatwootBridge.ts`, `src/components/chatbot/chatStrings.ts`, `src/services/humanRequest.ts`, `CLAUDE.md`
+- **Why:** Amit saw handovers that weren't smooth. Timing gaps: the widget only learnt that an agent had joined on its next poll (up to 10 s), so chip.ai could still answer right after the agent; a chip.ai-failure handover said "Our team from our support team has joined the chat" before anyone had; if nobody picked up, the customer waited in silence; after a page reload the widget didn't poll until the customer typed.
+- **Related:** #134, #135; `chip-bridge` now checks Chatwoot on every call and returns `{ mode, waiting, agentName, notice, dropped }`.
+
+### Summary
+The bridge's answer to each customer message now says whether an agent has joined; the widget waits up to 1.5 s for it before showing chip.ai's reply and drops the reply (and the bridge keeps it out of Chatwoot) when a person has taken over. A chip.ai-failure handover shows "connecting you to our support team" and only says "<name> has joined" when an agent actually replies. If no agent replies within 3 minutes (`HUMAN_WAIT_MINUTES` on the bridge), chip.ai takes the chat back, the customer sees "Our team is busy right now…" with the Call/WhatsApp/Email card, and the chat is flagged for a call-back. Polling starts as soon as the chat window opens. If the bridge can't be reached while in human mode, chip.ai answers (fail-open).
+
+### Before
+```tsx
+// Chatbot.tsx
+} else {
+    void ChatwootBridge.mirror("user", text);   // mode in the answer ignored
+}
+...
+const parsed = await ChatApiService.getResponseWithRetry(text, lang, history);
+setMessages(prev => [...prev, { type: "bot", text: parsed.message, ... }]);
+...
+if (mode === "human") applyMode("human");     // "Our team ... has joined" even if nobody had
+...
+if (!ChatwootBridge.enabled || !isOpen || !hasConversation) return; // no poll until first message
+```
+
+### After
+```tsx
+mirrored = ChatwootBridge.mirror("user", text);           // BridgeState
+...
+const parsed = await ChatApiService.getResponseWithRetry(text, lang, history);
+if (await agentJoinedMeanwhile()) return;                  // agent joined → chip.ai reply not shown
+...
+syncMode(st);   // waiting → t.connecting; agent reply → t.agentJoined(name); notice team_busy → t.teamBusy + card
+...
+if (!ChatwootBridge.enabled || !isOpen) return;            // poll as soon as the chat opens
+```
+
+### Notes
+- Found from the laptop test logs (Devendra's chat): "i am very unhappy with the responce" wasn't flagged; complaint patterns now include unhappy / not happy / upset / disappointed / frustrated / angry, naraz / pareshan, नाराज़ / परेशान.
+- Same logs: every message showed "marked open by system due to an error with the agent bot". Chatwoot 4.x refuses internal webhook addresses, so the website Agent Bot no longer has an outgoing URL (bridge repo; no website change).
+- Verified in a browser end-to-end (fake chip.ai + fake Chatwoot): agent replies and the customer types before the next poll → chip.ai's answer is shown neither in the widget nor in Chatwoot, one "Rishab … has joined" line; chip.ai down → "connecting…", no false "joined"; nobody answers → "Our team is busy right now" + card after the wait; `tsc` + eslint clean.
+
 ## [2026-10-28] #135 — Chatwoot handover: retries, typed "talk to a person", handover summary, customer details, handback
 - **Type:** feature
 - **Scope:** `src/services/humanRequest.ts` (new), `src/services/chatwootBridge.ts`, `src/services/chatApiService.ts`, `src/services/chatAuth.ts`, `src/services/chatbot.models.ts`, `src/components/chatbot/Chatbot.tsx`, `CLAUDE.md`

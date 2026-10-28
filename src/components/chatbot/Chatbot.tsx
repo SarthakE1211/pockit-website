@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatApiService } from "@/services/chatApiService";
-import { ChatwootBridge, botMeta, type ChatMode } from "@/services/chatwootBridge";
+import { ChatwootBridge, botMeta, type BridgeState, type ChatMode } from "@/services/chatwootBridge";
 import { detectHumanRequest } from "@/services/humanRequest";
 import { ChatApiResponse, ChatChip, ChatMessage } from "@/services/chatbot.models";
 import { CHAT_LANGUAGES, CHAT_STRINGS, type ChatLanguage, isChatLanguage } from "./chatStrings";
@@ -192,17 +192,50 @@ export default function Chatbot() {
         setMessages(prev => [...prev, { type: "bot", text: t.handoffIntro, showHumanHandoff: true, time: getTime() }]);
     }, [t]);
 
+    // Follow the bridge's bot ⇄ human state and tell the customer what is happening, once per step
+    // (CHANGELOG #136): "connecting you…" while nobody has picked up, "<name> has joined" when an
+    // agent replies, "chip.ai is back" on resolve, "our team is busy" when nobody picked up in time.
+    const agentAnnouncedRef = useRef(false);
+    const syncMode = useCallback((st: BridgeState) => {
+        const prev = chatModeRef.current;
+        const say = (text: string, extra: Partial<ChatMessage> = {}) =>
+            setMessages(p => [...p, { type: "bot", text, time: getTime(), ...extra }]);
+        if (st.mode === "human") {
+            if (prev !== "human") {
+                chatModeRef.current = "human";
+                setChatMode("human");
+                setFollowUpChips([]);
+                agentAnnouncedRef.current = false;
+                if (st.waiting) say(t.connecting);
+            }
+            if (!st.waiting && !agentAnnouncedRef.current) {
+                agentAnnouncedRef.current = true;
+                say(t.agentJoined(st.agentName || "Our team"));
+            }
+            return;
+        }
+        agentAnnouncedRef.current = false;
+        if (prev === "human") {
+            chatModeRef.current = "bot";
+            setChatMode("bot");
+            setFollowUpChips([]);
+        }
+        if (st.notice === "team_busy") say(t.teamBusy, { showHumanHandoff: true });
+        else if (prev === "human") say(t.botBack);
+    }, [t]);
+    const pollNowRef = useRef<() => void>(() => {});
+
     // Copy chip.ai's reply to Chatwoot with what it found (service / order / pincode), and flag
     // the chat when chip.ai says a person should help (CHANGELOG #135).
     const afterBotReply = useCallback((resp: ChatApiResponse) => {
         if (!resp.message) return;
         void ChatwootBridge.mirror("bot", resp.message, botMeta(ChatApiService.normalizeLang(langRef.current), {
             service: resp.service ?? null, order: resp.order ?? null, pincode: resp.pincode ?? null,
-        }));
+        })).then(st => { if (st?.mode === "human") { syncMode(st); pollNowRef.current(); } });
         if (resp.handoff || resp.showHumanHandoff) {
             void ChatwootBridge.handoff("bot_suggested", { summary: resp.handoffSummary });
         }
-    }, []);
+    }, [syncMode]);
 
     // ── WebSocket: connect when chat opens, disconnect when it closes ──────────
     useEffect(() => {
@@ -335,32 +368,24 @@ export default function Chatbot() {
         // and client id, so a new identity needs a fresh connection.
     }, [isOpen, authUser?.user_id, afterBotReply]);
 
-    // Switch bot ⇄ human and tell the customer, once per transition.
-    const applyMode = useCallback((next: ChatMode, agentName?: string | null) => {
-        if (next === chatModeRef.current) return;
-        chatModeRef.current = next;
-        setChatMode(next);
-        setFollowUpChips([]);
-        setMessages(prev => [...prev, {
-            type: "bot",
-            text: next === "human" ? t.agentJoined(agentName || "Our team") : t.botBack,
-            time: getTime(),
-        }]);
-    }, [t]);
-
-    // Poll the bridge for agent replies while the chat is open and has started.
-    const hasConversation = messages.length > 0;
+    // Poll the bridge for agent replies whenever the chat is open: also right after a page reload,
+    // so a chat an agent is handling is picked up before the customer types (CHANGELOG #136).
     useEffect(() => {
-        if (!ChatwootBridge.enabled || !isOpen || !hasConversation) return;
+        if (!ChatwootBridge.enabled || !isOpen) return;
         let stopped = false;
+        let running = false;
         let timer: ReturnType<typeof setTimeout>;
         const tick = async () => {
+            if (running) return;
+            running = true;
+            clearTimeout(timer);
             let seen = 0;
             try { seen = Number(localStorage.getItem(AGENT_SEEN_KEY) || 0); } catch { /* ignore */ }
             const r = await ChatwootBridge.poll(seen);
+            running = false;
             if (stopped) return;
             if (r) {
-                if (r.mode === "human") applyMode("human", r.agentName ?? r.messages[0]?.agent);
+                if (r.mode === "human") syncMode({ ...r, agentName: r.agentName ?? r.messages[0]?.agent });
                 if (r.messages.length) {
                     setIsLoading(false);
                     setMessages(prev => [...prev, ...r.messages.map(m => ({
@@ -368,15 +393,16 @@ export default function Chatbot() {
                     }))]);
                     try { localStorage.setItem(AGENT_SEEN_KEY, String(r.messages[r.messages.length - 1].id)); } catch { /* ignore */ }
                 }
-                if (r.mode === "bot") applyMode("bot");
+                if (r.mode === "bot") syncMode(r);
                 // The team resolved a chat they took over: tell chip.ai what was said.
                 if (r.handback?.length) void ChatApiService.sendHandback(r.handback, langRef.current);
             }
             timer = setTimeout(tick, chatModeRef.current === "human" ? POLL_MS_HUMAN : POLL_MS_BOT);
         };
+        pollNowRef.current = () => { void tick(); };
         tick();
-        return () => { stopped = true; clearTimeout(timer); };
-    }, [isOpen, hasConversation, authUser?.user_id, applyMode]);
+        return () => { stopped = true; clearTimeout(timer); pollNowRef.current = () => {}; };
+    }, [isOpen, authUser?.user_id, syncMode]);
 
     const submitContact = async () => {
         const name = contactName.trim();
@@ -566,13 +592,25 @@ export default function Chatbot() {
         setFollowUpChips([]);
 
         // A Pockit agent is handling this chat: send to Chatwoot only, chip.ai stays silent.
+        // If the bridge is unreachable the agent can't answer either, so chip.ai takes over (fail-open).
+        let mirrored: Promise<BridgeState | null>;
         if (chatModeRef.current === "human") {
-            const mode = await ChatwootBridge.mirror("user", text);
-            if (mode === "bot") applyMode("bot");
-            else return;
+            const st = await ChatwootBridge.mirror("user", text);
+            if (st?.mode === "human") { syncMode(st); return; }
+            syncMode(st ?? { mode: "bot" });
+            mirrored = Promise.resolve(st);
         } else {
-            void ChatwootBridge.mirror("user", text);
+            mirrored = ChatwootBridge.mirror("user", text);
         }
+        // An agent may have joined since the last poll: the bridge says so in its answer to this
+        // message, and then chip.ai's reply is not shown (checked again before displaying it).
+        const agentJoinedMeanwhile = async () => {
+            const st = await Promise.race([mirrored, new Promise<null>(r => setTimeout(() => r(null), 1500))]);
+            if (st?.mode !== "human") return false;
+            syncMode(st);
+            pollNowRef.current();
+            return true;
+        };
 
         // Typed "I want to talk to a person" → same as the "Talk to a human" chip (card + flag,
         // no chip.ai call). A complaint is flagged for the team and chip.ai still answers.
@@ -598,6 +636,7 @@ export default function Chatbot() {
         // ── REST fallback ──────────────────────────────────────────────────────
         try {
             const parsed = await ChatApiService.getResponseWithRetry(text, lang, history);
+            if (await agentJoinedMeanwhile()) return;
             setMessages(prev => [...prev, {
                 type: "bot",
                 text: parsed.message || "Sorry, I couldn't get a response.",
@@ -612,9 +651,10 @@ export default function Chatbot() {
             afterBotReply(parsed);
         } catch (err) {
             // chip.ai failed even after retries: during support hours the bridge hands the chat to an agent.
-            const mode = await ChatwootBridge.handoff(`chip.ai error: ${err instanceof Error ? err.message : "unknown"}`);
-            if (mode === "human") {
-                applyMode("human");
+            if (await agentJoinedMeanwhile()) return;
+            const st = await ChatwootBridge.handoff(`chip.ai error: ${err instanceof Error ? err.message : "unknown"}`);
+            if (st?.mode === "human") {
+                syncMode(st);
             } else {
                 setMessages(prev => [...prev, { type: "bot", text: "", isError: true, time: getTime() }]);
                 setFollowUpChips(ERROR_CHIPS);
@@ -622,7 +662,7 @@ export default function Chatbot() {
         } finally {
             setIsLoading(false);
         }
-    }, [inputText, lang, isLoading, applyMode, afterBotReply, showHandoffCard]);
+    }, [inputText, lang, isLoading, syncMode, afterBotReply, showHandoffCard]);
 
     // ── "Do you serve my area?" — browser location → pincode → ask the bot ────
     // The bot's check_service_availability tool answers and returns the

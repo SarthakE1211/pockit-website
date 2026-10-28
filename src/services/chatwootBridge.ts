@@ -33,8 +33,19 @@ export interface AgentMessage {
     ts: number;
 }
 
-export interface PollResult {
+/**
+ * The bridge's view of the chat. `waiting` = handed to the team (chip.ai failed) but no agent has
+ * replied yet. `notice: 'team_busy'` (once) = nobody picked up in time, chip.ai is back.
+ */
+export interface BridgeState {
     mode: ChatMode;
+    waiting?: boolean;
+    agentName?: string | null;
+    notice?: 'team_busy';
+    dropped?: boolean;
+}
+
+export interface PollResult extends BridgeState {
     agentName: string | null;
     messages: AgentMessage[];
     /** Present once, right after the team resolves a chat they took over. */
@@ -99,10 +110,12 @@ const post = <T>(path: string, body: Record<string, unknown>) =>
 export const ChatwootBridge = {
     enabled: Boolean(BASE),
 
-    /** Copy one message to Chatwoot. Resolves to the current mode (or null if unavailable). */
-    async mirror(role: 'user' | 'bot', text: string, meta?: BotMeta): Promise<ChatMode | null> {
-        const r = await post<{ mode: ChatMode }>('/web/event', { role, text, meta });
-        return r?.mode ?? null;
+    /**
+     * Copy one message to Chatwoot. Resolves to the chat's current state (null if unavailable).
+     * A chip.ai answer sent after a person took over comes back `dropped` (not shown in Chatwoot).
+     */
+    mirror(role: 'user' | 'bot', text: string, meta?: BotMeta): Promise<BridgeState | null> {
+        return post<BridgeState>('/web/event', { role, text, meta });
     },
 
     /**
@@ -110,9 +123,8 @@ export const ChatwootBridge = {
      * means chip.ai failed (live takeover during support hours).
      * `quote` = the customer's words, `summary` = chip.ai's own summary when it sends one.
      */
-    async handoff(reason: FlagReason | string, extra?: { quote?: string; summary?: string | null }): Promise<ChatMode | null> {
-        const r = await post<{ mode: ChatMode }>('/web/handoff', { reason, ...extra });
-        return r?.mode ?? null;
+    handoff(reason: FlagReason | string, extra?: { quote?: string; summary?: string | null }): Promise<BridgeState | null> {
+        return post<BridgeState>('/web/handoff', { reason, ...extra });
     },
 
     /** Name + phone from a visitor who isn't logged in. */
