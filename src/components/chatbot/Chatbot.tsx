@@ -206,11 +206,11 @@ export default function Chatbot() {
                 setChatMode("human");
                 setFollowUpChips([]);
                 agentAnnouncedRef.current = false;
-                if (st.waiting) say(t.connecting);
+                if (st.waiting) say(st.reason === "requested" ? t.connectingRequested : t.connecting);
             }
             if (!st.waiting && !agentAnnouncedRef.current) {
                 agentAnnouncedRef.current = true;
-                say(t.agentJoined(st.agentName || "Our team"));
+                say(st.agentName ? t.agentJoined(st.agentName) : t.teamJoined);
             }
             return;
         }
@@ -224,6 +224,22 @@ export default function Chatbot() {
         else if (prev === "human") say(t.botBack);
     }, [t]);
     const pollNowRef = useRef<() => void>(() => {});
+
+    // Customer asked for a person (chip or typed). In support hours the bridge starts a LIVE
+    // handover (decided 2026-10-28, CHANGELOG #137): chip.ai goes quiet and the customer waits for
+    // an agent in this chat. Otherwise (off hours, team busy, bridge unreachable) → contact card.
+    const askForPerson = useCallback(async (reason: "talk_to_human" | "asked_for_person", quote?: string) => {
+        setFollowUpChips([]);
+        setIsLoading(true);
+        const st = await ChatwootBridge.handoff(reason, quote ? { quote } : undefined);
+        setIsLoading(false);
+        if (st?.mode === "human") {
+            syncMode(st);
+            pollNowRef.current();
+        } else {
+            showHandoffCard();
+        }
+    }, [syncMode, showHandoffCard]);
 
     // Copy chip.ai's reply to Chatwoot with what it found (service / order / pincode), and flag
     // the chat when chip.ai says a person should help (CHANGELOG #135).
@@ -616,8 +632,7 @@ export default function Chatbot() {
         // no chip.ai call). A complaint is flagged for the team and chip.ai still answers.
         const asked = detectHumanRequest(text);
         if (asked === "person") {
-            showHandoffCard();
-            void ChatwootBridge.handoff("asked_for_person", { quote: text });
+            await askForPerson("asked_for_person", text);
             return;
         }
         if (asked === "complaint") void ChatwootBridge.handoff("complaint", { quote: text });
@@ -662,7 +677,7 @@ export default function Chatbot() {
         } finally {
             setIsLoading(false);
         }
-    }, [inputText, lang, isLoading, syncMode, afterBotReply, showHandoffCard]);
+    }, [inputText, lang, isLoading, syncMode, afterBotReply, askForPerson]);
 
     // ── "Do you serve my area?" — browser location → pincode → ask the bot ────
     // The bot's check_service_availability tool answers and returns the
@@ -724,9 +739,7 @@ export default function Chatbot() {
                 setShowLogin(true);
                 return;
             case "handoff":
-                showHandoffCard();
-                // Not a live chat (agreed 2026-10-27): flags the chat in Chatwoot for follow-up.
-                void ChatwootBridge.handoff("talk_to_human");
+                void askForPerson("talk_to_human");
                 return;
             case "retry": {
                 const lastUser = [...messagesRef.current].reverse().find(m => m.type === "user");

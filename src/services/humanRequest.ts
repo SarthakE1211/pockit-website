@@ -20,6 +20,8 @@ const PERSON: RegExp[] = [
     // Hinglish
     /\b(insaan|insan|aadmi|admi|banda|bande|kisi|koi|agent|executive)\s+(se|say)\s+(baat|bat)/i,
     /\b(baat|bat)\s+(karni|karna|karao|karwao|karwa do|kara do)\b[^.?!]{0,20}\b(insaan|insan|aadmi|admi|agent|executive|kisi)\b/i,
+    // "<anyone> se baat karo" incl. typos ("insn se baat karro", "kisi se bat krwao")
+    /\b\w{2,12}\s+(se|say|sy)\s+(baat|bat|bt)\s*(kar|karo|karro|karao|karwao|karwa|kara|karni|karna|krni|krna|krwao|krao|krvao)\b/i,
     // Hindi
     /(इंसान|इन्सान|व्यक्ति|आदमी|किसी|एजेंट|कस्टमर\s*केयर)\s*से\s*बात/,
     // Marathi

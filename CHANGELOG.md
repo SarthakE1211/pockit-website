@@ -75,6 +75,34 @@ The point of the example is to show the **shape** of a well-formed entry. Real e
 # Entries
 
 <!-- NEW ENTRIES GO HERE, DIRECTLY BELOW THIS LINE -->
+## [2026-10-28] #137 — "Talk to a human" starts a live handover during support hours
+- **Type:** feature
+- **Scope:** `src/components/chatbot/Chatbot.tsx`, `src/components/chatbot/chatStrings.ts`, `src/services/chatwootBridge.ts`, `src/services/humanRequest.ts`, `CLAUDE.md`
+- **Why:** Amit tested "Talk to a human" / typed "talk to human" and no handover happened: by the earlier decision it only flagged the chat. He chose live handover during support hours (2026-10-28). His test also typed "insn se baat karro" (typo, not detected), and Chatwoot 4.19 locks the reply box to Private Note while the bot owns a pending chat, so agents have to click "Take over", which the bridge then wrongly reverted.
+- **Related:** #134–#136; bridge repo `pockit-chatwoot` (`chip-bridge/web.js`).
+
+### Summary
+In support hours (10 AM–7 PM IST), the "Talk to a human" chip or a typed request hands the chat to the team live: chip.ai goes quiet, the customer sees "Connecting you to our support team…", and the chat opens in Chatwoot with a Handover summary. When an agent replies the customer sees "<name> has joined"; if an agent clicks **Take over** without typing, "A member of our support team has joined". If nobody answers within 3 minutes (9 if an agent has opened the chat), chip.ai takes back the chat with "Our team is busy right now…" and the Call/WhatsApp/Email card. Outside hours, or bridge unreachable: the card + flag as before. Typed detection now tolerates "<anyone> se baat karo/karro/krwao".
+
+### Before
+```tsx
+case "handoff":
+    showHandoffCard();
+    // Not a live chat (agreed 2026-10-27): flags the chat in Chatwoot for follow-up.
+    void ChatwootBridge.handoff("talk_to_human");
+    return;
+```
+
+### After
+```tsx
+case "handoff":
+    void askForPerson("talk_to_human");   // live in hours -> syncMode (connecting...); else contact card
+    return;
+```
+
+### Notes
+- Verified in a browser end-to-end (fake chip.ai + fake Chatwoot): chip -> "Connecting...", chat open + High, 0 chip.ai calls while waiting; agent reply -> "Rishab ... has joined"; Resolve -> chip.ai back; Take over (no message) -> "A member of our support team has joined", 0 chip.ai calls; typed "insn se baat karro" -> live, nobody answers -> "Our team is busy" + card, chip.ai answers again. `tsc` + eslint clean.
+
 ## [2026-10-28] #136 — Smoother bot ⇄ agent handover (no chip.ai reply after an agent joins, honest "connecting", team-busy fallback)
 - **Type:** fix
 - **Scope:** `src/components/chatbot/Chatbot.tsx`, `src/services/chatwootBridge.ts`, `src/components/chatbot/chatStrings.ts`, `src/services/humanRequest.ts`, `CLAUDE.md`

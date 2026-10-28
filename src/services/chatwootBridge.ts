@@ -8,8 +8,8 @@
 //  • mode === 'human' when an agent replies in Chatwoot, or chip.ai fails during
 //    support hours. chip.ai is then silent; agent replies arrive via poll().
 //  • Resolving the chat in Chatwoot returns it to chip.ai.
-//  • "Talk to a human" (chip or typed), complaints and chip.ai saying it can't help only flag
-//    the chat for follow-up, with a handover summary for the team (CHANGELOG #135).
+//  • "Talk to a human" (chip or typed) in support hours = LIVE handover (CHANGELOG #137); off hours,
+//    complaints and chip.ai saying it can't help only flag the chat, with a handover summary.
 //  • Context the bridge passes to the team: login details (name, mobile, email, pincode, city,
 //    address, customer id) and what chip.ai found (service, order, pincode, language).
 //
@@ -42,6 +42,8 @@ export interface BridgeState {
     waiting?: boolean;
     agentName?: string | null;
     notice?: 'team_busy';
+    /** Why the chat is with the team: customer asked, chip.ai failed, or an agent stepped in. */
+    reason?: 'requested' | 'failed' | 'agent';
     dropped?: boolean;
 }
 

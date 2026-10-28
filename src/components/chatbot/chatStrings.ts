@@ -26,6 +26,10 @@ interface WidgetStrings {
     botBack: string;
     /** chip.ai failed and the chat went to the team, nobody has replied yet. */
     connecting: string;
+    /** The customer asked for a person; waiting for an agent. */
+    connectingRequested: string;
+    /** An agent took over in Chatwoot but hasn't typed yet (name unknown). */
+    teamJoined: string;
     /** Nobody picked up in time; chip.ai continues and the team will call back. */
     teamBusy: string;
     contactPrompt: string;
@@ -49,6 +53,8 @@ export const CHAT_STRINGS: Record<ChatLanguage, WidgetStrings> = {
         agentJoined: name => `${name} from our support team has joined the chat.`,
         botBack: "Our team has wrapped up. chip.ai is back to help you.",
         connecting: "I'm having trouble answering that, so I'm connecting you to our support team. Please stay in this chat.",
+        connectingRequested: "Connecting you to our support team. Someone will reply right here shortly, please stay in this chat.",
+        teamJoined: "A member of our support team has joined the chat.",
         teamBusy: "Our team is busy right now. They'll get back to you soon. Meanwhile chip.ai is here to help, or reach us directly:",
         contactPrompt: "So our team can call you back if needed, please share your details:",
         contactName: "Your name",
@@ -72,6 +78,8 @@ export const CHAT_STRINGS: Record<ChatLanguage, WidgetStrings> = {
         agentJoined: name => `हमारी सपोर्ट टीम से ${name} चैट में जुड़ गए हैं।`,
         botBack: "हमारी टीम ने बात पूरी कर ली है। chip.ai फिर से आपकी मदद के लिए यहाँ है।",
         connecting: "मुझे इसका जवाब देने में दिक्कत हो रही है, इसलिए मैं आपको हमारी सपोर्ट टीम से जोड़ रहा हूँ। कृपया इसी चैट में बने रहें।",
+        connectingRequested: "आपको हमारी सपोर्ट टीम से जोड़ा जा रहा है। कोई जल्द ही यहीं जवाब देगा, कृपया इसी चैट में बने रहें।",
+        teamJoined: "हमारी सपोर्ट टीम के एक सदस्य चैट में जुड़ गए हैं।",
         teamBusy: "हमारी टीम अभी व्यस्त है। वे जल्द ही आपसे संपर्क करेंगे। तब तक chip.ai आपकी मदद के लिए यहाँ है, या हमसे सीधे संपर्क करें:",
         contactPrompt: "ज़रूरत पड़ने पर हमारी टीम आपको कॉल कर सके, इसलिए अपनी जानकारी दें:",
         contactName: "आपका नाम",
@@ -95,6 +103,8 @@ export const CHAT_STRINGS: Record<ChatLanguage, WidgetStrings> = {
         agentJoined: name => `आमच्या सपोर्ट टीममधून ${name} चॅटमध्ये सामील झाले आहेत.`,
         botBack: "आमच्या टीमने संभाषण पूर्ण केले आहे. chip.ai पुन्हा तुमच्या मदतीसाठी आहे.",
         connecting: "मला याचे उत्तर देण्यात अडचण येत आहे, म्हणून मी तुम्हाला आमच्या सपोर्ट टीमशी जोडत आहे. कृपया याच चॅटमध्ये रहा.",
+        connectingRequested: "तुम्हाला आमच्या सपोर्ट टीमशी जोडत आहोत. कोणीतरी लवकरच इथेच उत्तर देईल, कृपया याच चॅटमध्ये रहा.",
+        teamJoined: "आमच्या सपोर्ट टीममधील एक सदस्य चॅटमध्ये सामील झाले आहेत.",
         teamBusy: "आमची टीम सध्या व्यस्त आहे. ते लवकरच तुमच्याशी संपर्क साधतील. तोपर्यंत chip.ai तुमच्या मदतीसाठी आहे, किंवा आमच्याशी थेट संपर्क साधा:",
         contactPrompt: "गरज पडल्यास आमची टीम तुम्हाला कॉल करू शकेल, म्हणून तुमची माहिती द्या:",
         contactName: "तुमचे नाव",
