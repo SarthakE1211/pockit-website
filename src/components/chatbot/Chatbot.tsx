@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatApiService } from "@/services/chatApiService";
-import { ChatwootBridge, type ChatMode } from "@/services/chatwootBridge";
-import { ChatChip, ChatMessage } from "@/services/chatbot.models";
+import { ChatwootBridge, botMeta, type ChatMode } from "@/services/chatwootBridge";
+import { detectHumanRequest } from "@/services/humanRequest";
+import { ChatApiResponse, ChatChip, ChatMessage } from "@/services/chatbot.models";
 import { CHAT_LANGUAGES, CHAT_STRINGS, type ChatLanguage, isChatLanguage } from "./chatStrings";
 import { ChatAuthSession, ChatAuthUser, getChatSession, logoutChat, onChatSessionChange } from "@/services/chatAuth";
 import ChatLogin from "./ChatLogin";
@@ -62,6 +63,8 @@ export default function Chatbot() {
     const [followUpChips, setFollowUpChips] = useState<ChatChip[]>([]);
     // Reply language (sent with every message; backend replies in it). Saved per browser.
     const [lang, setLang] = useState<ChatLanguage>("English");
+    const langRef = useRef(lang);
+    langRef.current = lang;
     const t = CHAT_STRINGS[lang];
     useEffect(() => {
         try {
@@ -183,6 +186,24 @@ export default function Chatbot() {
     // open. The static JSX is the single source of truth for the
     // greeting; `messages` only holds the real conversation.
 
+    // Call / WhatsApp / Email card (the "Talk to a human" answer).
+    const showHandoffCard = useCallback(() => {
+        setFollowUpChips([]);
+        setMessages(prev => [...prev, { type: "bot", text: t.handoffIntro, showHumanHandoff: true, time: getTime() }]);
+    }, [t]);
+
+    // Copy chip.ai's reply to Chatwoot with what it found (service / order / pincode), and flag
+    // the chat when chip.ai says a person should help (CHANGELOG #135).
+    const afterBotReply = useCallback((resp: ChatApiResponse) => {
+        if (!resp.message) return;
+        void ChatwootBridge.mirror("bot", resp.message, botMeta(ChatApiService.normalizeLang(langRef.current), {
+            service: resp.service ?? null, order: resp.order ?? null, pincode: resp.pincode ?? null,
+        }));
+        if (resp.handoff || resp.showHumanHandoff) {
+            void ChatwootBridge.handoff("bot_suggested", { summary: resp.handoffSummary });
+        }
+    }, []);
+
     // ── WebSocket: connect when chat opens, disconnect when it closes ──────────
     useEffect(() => {
         if (!WS_ENABLED) return;
@@ -267,7 +288,7 @@ export default function Chatbot() {
                     });
 
                     setFollowUpChips(resp.followUpChips ?? []);
-                    if (resp.message) void ChatwootBridge.mirror("bot", resp.message);
+                    afterBotReply(resp);
                 },
 
                 onError: (err) => {
@@ -312,7 +333,7 @@ export default function Chatbot() {
         };
         // Reconnects on login/logout: the socket carries the identity's token
         // and client id, so a new identity needs a fresh connection.
-    }, [isOpen, authUser?.user_id]);
+    }, [isOpen, authUser?.user_id, afterBotReply]);
 
     // Switch bot ⇄ human and tell the customer, once per transition.
     const applyMode = useCallback((next: ChatMode, agentName?: string | null) => {
@@ -348,6 +369,8 @@ export default function Chatbot() {
                     try { localStorage.setItem(AGENT_SEEN_KEY, String(r.messages[r.messages.length - 1].id)); } catch { /* ignore */ }
                 }
                 if (r.mode === "bot") applyMode("bot");
+                // The team resolved a chat they took over: tell chip.ai what was said.
+                if (r.handback?.length) void ChatApiService.sendHandback(r.handback, langRef.current);
             }
             timer = setTimeout(tick, chatModeRef.current === "human" ? POLL_MS_HUMAN : POLL_MS_BOT);
         };
@@ -550,6 +573,16 @@ export default function Chatbot() {
         } else {
             void ChatwootBridge.mirror("user", text);
         }
+
+        // Typed "I want to talk to a person" → same as the "Talk to a human" chip (card + flag,
+        // no chip.ai call). A complaint is flagged for the team and chip.ai still answers.
+        const asked = detectHumanRequest(text);
+        if (asked === "person") {
+            showHandoffCard();
+            void ChatwootBridge.handoff("asked_for_person", { quote: text });
+            return;
+        }
+        if (asked === "complaint") void ChatwootBridge.handoff("complaint", { quote: text });
         setIsLoading(true);
 
         const history = [...messagesRef.current, userMsg]
@@ -564,7 +597,7 @@ export default function Chatbot() {
 
         // ── REST fallback ──────────────────────────────────────────────────────
         try {
-            const parsed = await ChatApiService.getResponse(text, lang, history);
+            const parsed = await ChatApiService.getResponseWithRetry(text, lang, history);
             setMessages(prev => [...prev, {
                 type: "bot",
                 text: parsed.message || "Sorry, I couldn't get a response.",
@@ -576,9 +609,9 @@ export default function Chatbot() {
                 time: getTime(),
             }]);
             setFollowUpChips(parsed.followUpChips ?? []);
-            if (parsed.message) void ChatwootBridge.mirror("bot", parsed.message);
+            afterBotReply(parsed);
         } catch (err) {
-            // chip.ai failed: during support hours the bridge hands the chat to an agent.
+            // chip.ai failed even after retries: during support hours the bridge hands the chat to an agent.
             const mode = await ChatwootBridge.handoff(`chip.ai error: ${err instanceof Error ? err.message : "unknown"}`);
             if (mode === "human") {
                 applyMode("human");
@@ -589,7 +622,7 @@ export default function Chatbot() {
         } finally {
             setIsLoading(false);
         }
-    }, [inputText, lang, isLoading, applyMode]);
+    }, [inputText, lang, isLoading, applyMode, afterBotReply, showHandoffCard]);
 
     // ── "Do you serve my area?" — browser location → pincode → ask the bot ────
     // The bot's check_service_availability tool answers and returns the
@@ -651,8 +684,7 @@ export default function Chatbot() {
                 setShowLogin(true);
                 return;
             case "handoff":
-                setFollowUpChips([]);
-                setMessages(prev => [...prev, { type: "bot", text: t.handoffIntro, showHumanHandoff: true, time: getTime() }]);
+                showHandoffCard();
                 // Not a live chat (agreed 2026-10-27): flags the chat in Chatwoot for follow-up.
                 void ChatwootBridge.handoff("talk_to_human");
                 return;

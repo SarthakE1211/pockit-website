@@ -19,6 +19,12 @@ export interface ChatAuthUser {
     customer_id: number | null;
     name: string | null;
     is_registered: boolean;
+    // Optional profile details (sent by the chatbot backend once it returns them; passed to
+    // the support team in Chatwoot, CHANGELOG #135).
+    email?: string | null;
+    pincode?: string | null;
+    city?: string | null;
+    address?: string | null;
 }
 
 export interface ChatAuthSession {

@@ -75,6 +75,58 @@ The point of the example is to show the **shape** of a well-formed entry. Real e
 # Entries
 
 <!-- NEW ENTRIES GO HERE, DIRECTLY BELOW THIS LINE -->
+## [2026-10-28] #135 — Chatwoot handover: retries, typed "talk to a person", handover summary, customer details, handback
+- **Type:** feature
+- **Scope:** `src/services/humanRequest.ts` (new), `src/services/chatwootBridge.ts`, `src/services/chatApiService.ts`, `src/services/chatAuth.ts`, `src/services/chatbot.models.ts`, `src/components/chatbot/Chatbot.tsx`, `CLAUDE.md`
+- **Why:** Amit's review of a similar human-in-the-loop design: avoid handing chats to people on one network blip, catch customers who *type* that they want a person, and give the agent the context (who, what, where) at handover.
+- **Related:** #134; `chip-bridge` (repo `pockit-chatwoot`) summary notes + running context; backend asks for Sarthak in the hand-over prompt (`PROMPT-for-Sarthak-chip.ai-backend.md`).
+
+### Summary
+chip.ai calls are retried (after 2 s and 5 s) before a failure hands the chat to the team. Typed requests for a person in English / Hinglish / Hindi / Marathi behave like the "Talk to a human" chip (card + Chatwoot flag, no chip.ai call); complaints are flagged and chip.ai still answers. chip.ai's reply cards (service / order / pincode / language) and the login profile (email, pincode, city, address when the backend sends them) go to the bridge, which posts a **handover summary** note and keeps a running context in the conversation's attributes. When the team resolves a chat they took over, the agent part of the conversation is sent to chip.ai (`POST /api/v1/chat/handback`, fail-open until the backend adds it). A backend `handoff: true` (+ `handoff_summary`) flags the chat as "chip.ai couldn't help".
+
+### Before
+```tsx
+// src/components/chatbot/Chatbot.tsx — sendMessage (REST path)
+const parsed = await ChatApiService.getResponse(text, lang, history);
+...
+if (parsed.message) void ChatwootBridge.mirror("bot", parsed.message);
+```
+```ts
+// src/services/chatwootBridge.ts
+return u ? { name: u.name, mobile: u.mobile, customer_id: u.customer_id } : undefined;
+async handoff(reason: string) { ... post('/web/handoff', { reason }) }
+```
+
+### After
+```tsx
+// src/components/chatbot/Chatbot.tsx — sendMessage
+const asked = detectHumanRequest(text);
+if (asked === "person") {
+    showHandoffCard();
+    void ChatwootBridge.handoff("asked_for_person", { quote: text });
+    return;
+}
+if (asked === "complaint") void ChatwootBridge.handoff("complaint", { quote: text });
+...
+const parsed = await ChatApiService.getResponseWithRetry(text, lang, history);
+...
+afterBotReply(parsed); // mirror with botMeta(service/order/pincode/lang); flag when parsed.handoff
+```
+```tsx
+// poll: the team resolved a chat they took over -> tell chip.ai what was said
+if (r.handback?.length) void ChatApiService.sendHandback(r.handback, langRef.current);
+```
+```ts
+// src/services/chatwootBridge.ts
+return u ? { name, mobile, customer_id, email, pincode, city, address } : undefined;
+async handoff(reason: FlagReason | string, extra?: { quote?: string; summary?: string | null })
+```
+
+### Notes
+- Verified: `tsc --noEmit` + eslint clean; browser end-to-end (Playwright, fake chip.ai + fake Chatwoot): typed "mujhe insaan se baat karni hai" → card, 0 chip.ai calls, handover summary note; resolve → handback sent with the agent conversation; chip.ai down → 3 attempts over ~7 s, then live takeover.
+- `ChatApiService.normalizeLang` is now public (used for the bridge context).
+- Backend follow-ups (not in this repo): return `email` / address in the login user, `handoff` + `handoff_summary` in chat replies, and `POST /api/v1/chat/handback`.
+
 ## [2026-10-27] #134 — chip.ai website chats mirrored to Chatwoot, with live agent takeover
 - **Type:** feature
 - **Scope:** `src/services/chatwootBridge.ts` (new), `src/components/chatbot/Chatbot.tsx`, `src/components/chatbot/chatStrings.ts`, `src/services/chatbot.models.ts`, `src/app/globals.css`, `CLAUDE.md`

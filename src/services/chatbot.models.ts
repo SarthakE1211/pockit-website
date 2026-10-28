@@ -73,4 +73,15 @@ export interface ChatApiResponse {
     pincode?: ChatMessage['pincode'];
     followUpChips?: ChatChip[];
     showHumanHandoff?: boolean;
+    /** chip.ai says it can't help and a person should (backend `handoff`, CHANGELOG #135). */
+    handoff?: boolean;
+    /** chip.ai's short summary of the chat for the support team (backend `handoff_summary`). */
+    handoffSummary?: string | null;
+}
+
+/** One line of the agent part of a chat, handed back to chip.ai after the team resolves it. */
+export interface HandbackLine {
+    role: 'user' | 'agent';
+    text: string;
+    agent?: string;
 }

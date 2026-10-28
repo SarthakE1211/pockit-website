@@ -155,6 +155,13 @@ Locked decisions from `Pockit Engineers Seo Audit Presentation.pptx` (CHANGELOG 
 - **Customer details:** logged-in customers' name / mobile / `customer_id` come from the chat login (`getChatSession()`), never re-asked. Visitors who aren't logged in see a name + mobile form only once an agent has taken over.
 - **Fail-open is load-bearing:** any bridge error must leave the chatbot behaving exactly as before. Don't make chip.ai replies wait on the bridge.
 - **WhatsApp auto-answer by chip.ai is parked** (bridge `ENABLE_WHATSAPP_BOT=false`); revisit later.
+- **Added 2026-10-28 (CHANGELOG #135):**
+  - chip.ai calls are **retried twice (2 s, 5 s)** before counting as a failure.
+  - A customer **typing** that they want a person (English / Hinglish / Hindi / Marathi, `src/services/humanRequest.ts`) is treated exactly like the "Talk to a human" chip: card + flag, no chip.ai call. **Complaints** are flagged and chip.ai still answers. Keep the patterns narrow; a false "person" match costs the customer a bot answer.
+  - Every flag/takeover posts a **handover summary** private note (why, customer details, first + latest asks, what chip.ai found, language, next step), and the conversation's attributes keep a running context (`chat_topic`, `latest_ask`, `chip_service`, `chip_order`, `chip_pincode`, `chat_language`, `handover_reason`).
+  - Customer details sent to the team: name, mobile, email, pincode, city, address, customer id, whichever the chat login provides (the backend currently returns name/mobile/customer id; email + address are requested from Sarthak).
+  - After the team **resolves** a chat they took over, the agent conversation is posted to chip.ai (`POST /api/v1/chat/handback`, fail-open until the backend has it), because chip.ai keeps its own server-side history and ignores the widget's `history`.
+  - A backend `handoff: true` (+ `handoff_summary`) flags the chat as "chip.ai couldn't help". Not a live chat.
 
 ## Testing expectations
 

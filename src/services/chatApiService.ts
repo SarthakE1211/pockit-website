@@ -2,7 +2,7 @@
 // Next.js static class — REST + WebSocket streaming
 // WebSocket protocol matches backend: session → message events, token streaming
 
-import { ChatApiResponse, ChatChip, ChatHistoryItem, ChatMessage } from './chatbot.models';
+import { ChatApiResponse, ChatChip, ChatHistoryItem, ChatMessage, HandbackLine } from './chatbot.models';
 import { firebaseAuthHelper } from './firebaseAuth.helper';
 import { getChatAccessToken, getChatSession } from './chatAuth';
 
@@ -104,7 +104,7 @@ export class ChatApiService {
         return headers;
     }
 
-    private static normalizeLang(lang: string): string {
+    static normalizeLang(lang: string): string {
         const map: Record<string, string> = {
             english: 'en', hindi: 'hi', marathi: 'mr', tamil: 'ta', telugu: 'te',
         };
@@ -165,6 +165,8 @@ export class ChatApiService {
             pincode: json?.pincode ?? null,
             followUpChips: ChatApiService.normalizeChips(json?.followUpChips),
             showHumanHandoff: !!json?.showHumanHandoff,
+            handoff: !!(json?.handoff ?? json?.handoff_requested),
+            handoffSummary: typeof json?.handoff_summary === 'string' ? json.handoff_summary : null,
         };
     }
 
@@ -188,8 +190,54 @@ export class ChatApiService {
             body: JSON.stringify(body),
         });
 
-        if (!res.ok) throw new Error(`Chat API error ${res.status}`);
+        if (!res.ok) throw Object.assign(new Error(`Chat API error ${res.status}`), { status: res.status });
         return ChatApiService.shapeResponse(await res.json());
+    }
+
+    /**
+     * getResponse with retries (CHANGELOG #135): network errors, timeouts, 429 and 5xx are
+     * retried after 2 s and then 5 s, so one blip doesn't hand the chat to a person.
+     * 4xx answers (bad request, auth) are not retried.
+     */
+    static async getResponseWithRetry(
+        message: string,
+        lang: string,
+        history: ChatHistoryItem[],
+        delaysMs: number[] = [2000, 5000],
+    ): Promise<ChatApiResponse> {
+        for (let attempt = 0; ; attempt++) {
+            try {
+                return await ChatApiService.getResponse(message, lang, history);
+            } catch (err) {
+                const status = (err as { status?: number })?.status;
+                const retryable = status === undefined || status === 429 || status >= 500;
+                if (!retryable || attempt >= delaysMs.length) throw err;
+                await new Promise(r => setTimeout(r, delaysMs[attempt]));
+            }
+        }
+    }
+
+    /**
+     * After the support team resolves a chat they took over, tell chip.ai what the agent and
+     * customer said, so it continues with that in mind. Needs the backend's
+     * POST /api/v1/chat/handback (see the hand-over prompt); until it exists this quietly
+     * does nothing (fail-open).
+     */
+    static async sendHandback(lines: HandbackLine[], lang: string): Promise<void> {
+        if (!lines.length) return;
+        try {
+            await fetch(`${ChatApiService.API_BASE}/api/v1/chat/handback`, {
+                method: 'POST',
+                headers: await ChatApiService.buildHeaders(),
+                body: JSON.stringify({
+                    clientId: ChatApiService.getClientId(),
+                    lang: ChatApiService.normalizeLang(lang),
+                    transcript: lines,
+                }),
+            });
+        } catch {
+            /* fail open */
+        }
     }
 
     /**
